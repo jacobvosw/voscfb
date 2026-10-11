@@ -74,7 +74,7 @@ tr.log td.w { color: rgb(var(--good)); font-weight: 700; } tr.log td.lz { color:
 .board { border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; min-width: 0; }
 .board h2 { margin: 0; font-size: 13px; padding: 6px 9px; background: var(--head); border-bottom: 1px solid var(--rule); }
 .board h3 { margin: 0; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 6px 9px 2px; }
-.board table { min-width: 0; } .board th { position: static; font-size: 11px; }
+.board td.team::before { content: none !important; } .board .bx { overflow-x: auto; -webkit-overflow-scrolling: touch; } .board table { min-width: 0; table-layout: fixed; } .board th:nth-child(1), .board td:nth-child(1) { width: 34px; } .board th:nth-child(3), .board td:nth-child(3) { width: 56px; } .board th:nth-child(4), .board td:nth-child(4) { width: 70px; } .board th:nth-child(5), .board td:nth-child(5) { width: 66px; } .board td.l.team, .board th:nth-child(2) { position: sticky; left: 0; background: var(--panel); z-index: 1; } .board th { position: static; font-size: 11px; }
 .board td.team { cursor: default; } .board td.team::before { content: none; }
 .faq { display: grid; gap: 18px; max-width: 86ch; }
 .faq h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; margin: 0; padding-bottom: 4px; border-bottom: 1px solid var(--rule); }
@@ -382,9 +382,9 @@ function renderBoards(teams) {
   const pool = state.conf === "All" ? teams : teams.filter(t => t.sub === state.conf);
   $("boards").innerHTML = units.map(u => {
     const list = pool.filter(t => t.v[u.res] != null).sort((a, b) => b.v[u.res] - a.v[u.res]);
-    const n = list.length, tbl = (rows, label, start) => `<h3>${label}</h3><table><thead><tr><th class="l">#</th><th class="l">Team</th><th>Talent</th><th>Adj (${u.unit})</th><th>vs talent</th></tr></thead><tbody>` +
-      rows.map((t, i) => `<tr class="team"><td class="l rk">${start + i}</td><td class="l team" title="${t.name}">${ab(t.name)}<sub class="r">${cab(t.sub)}</sub></td><td>${t.v[u.tal].toFixed(1)}</td><td>${u.fmtA(t.v[u.adj])}</td><td class="${t.v[u.res] > 0 ? "pos" : "neg"}" style="font-weight:700">${u.fmtR(t.v[u.res])}</td></tr>`).join("") + `</tbody></table>`;
-    return `<div class="board"><h2>${u.title} <span class="tag">· ${n} teams rated</span></h2>${n ? tbl(list.slice(0, 5), "Overachieving", 1) + tbl(list.slice(-5), "Underachieving", Math.max(1, n - 4)) : `<div class="empty">Not enough rated teams.</div>`}</div>`;
+    const n = list.length, tbl = (rows, label, start) => `<h3>${label}</h3><div class="bx"><table><thead><tr><th class="l">#</th><th class="l">Team</th><th>Talent</th><th>Adj</th><th>Perf</th></tr></thead><tbody>` +
+      rows.map((t, i) => `<tr class="team"><td class="l rk">${start + i}</td><td class="l team" title="${t.name}">${ab(t.name)}<sub class="r">${cab(t.sub)}</sub></td><td>${t.v[u.tal].toFixed(1)}</td><td>${u.fmtA(t.v[u.adj])}</td><td class="${t.v[u.res] > 0 ? "pos" : "neg"}" style="font-weight:700">${u.fmtR(t.v[u.res])}</td></tr>`).join("") + `</tbody></table></div>`;
+    return `<div class="board"><h2>${u.title} <span class="tag">· ${u.unit} · ${n} teams</span></h2>${n ? tbl(list.slice(0, 5), "Overachieving", 1) + tbl(list.slice(-5), "Underachieving", Math.max(1, n - 4)) : `<div class="empty">Not enough rated teams.</div>`}</div>`;
   }).join("");
 }
 
