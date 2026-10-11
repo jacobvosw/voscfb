@@ -340,7 +340,7 @@ function render() {
   const rank = {}; for (const c of C) rank[c.id] = ranker(all, c);
   let list = all;
   if (isTeam && state.conf !== "All") list = list.filter(r => r.sub === state.conf);
-  if (isTeam && state.q.trim()) { const q = state.q.trim().toLowerCase(); list = list.filter(r => r.name.toLowerCase().includes(q)); }
+  if (isTeam && state.q.trim()) { const q = state.q.trim().toLowerCase(); list = list.filter(r => [r.name, ab(r.name), SHORT[r.name] || ""].some(s => s.toLowerCase().replace(/&/g, "").includes(q.replace(/&/g, "")))); }
   const sc = C.find(c => c.id === sortId) || C[0], nv = v => v == null ? (sc.lower ? Infinity : -Infinity) : v;
   list = [...list].sort((a, b) => (nv(a.v[sc.id]) - nv(b.v[sc.id])) * (sc.lower ? 1 : -1) * (dir < 0 ? 1 : -1) || a.name.localeCompare(b.name));
   if (!list.length) { $("body").innerHTML = `<tr><td colspan="16" class="empty">No teams match “${state.q}”.</td></tr>`; save(); return; }
