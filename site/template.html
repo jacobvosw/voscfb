@@ -1,0 +1,378 @@
+<title>VosCFB</title>
+<style>
+/* Layout: KenPom/Torvik-style stat sheet. Plain sans type, white ground, dense rows, every value carries a small grey rank numeral. Tabs across the top; one filter strip; one table (or the over/under boards). */
+:root {
+  --bg: #ffffff; --panel: #ffffff; --ink: #1a1a1a; --muted: #6b6b6b; --rule: #d6d6d6; --rule-soft: #ececec;
+  --stripe: #f5f5f5; --head: #e9e9e9; --link: #0b4fa6; --hi: #fff3c4; --tab: #f0f0f0;
+  --good: 22 128 70; --bad: 190 48 36;
+  --font: Arial, Helvetica, "Liberation Sans", system-ui, sans-serif;
+  --fs: 12.5px; --fs-rank: 9.5px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #121314; --panel: #121314; --ink: #e6e6e6; --muted: #9a9a9a; --rule: #3a3a3a; --rule-soft: #262626; --stripe: #1a1b1c; --head: #222324; --link: #7fb2ff; --hi: #3b3416; --tab: #1e1f20; --good: 72 190 120; --bad: 235 105 90; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #121314; --panel: #121314; --ink: #e6e6e6; --muted: #9a9a9a; --rule: #3a3a3a; --rule-soft: #262626; --stripe: #1a1b1c; --head: #222324; --link: #7fb2ff; --hi: #3b3416; --tab: #1e1f20; --good: 72 190 120; --bad: 235 105 90; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: var(--fs); line-height: 1.35; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 16px; padding-block: 14px 36px; display: grid; gap: 12px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; border-bottom: 2px solid var(--ink); padding-bottom: 6px; }
+h1 { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+.tag { color: var(--muted); font-size: 12px; }
+nav.tabs { display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 1px solid var(--rule); }
+nav.tabs button { font: inherit; font-size: 13px; font-weight: 700; color: var(--muted); background: var(--tab); border: 1px solid var(--rule); border-bottom: 0; padding: 6px 12px; cursor: pointer; border-radius: 3px 3px 0 0; }
+nav.tabs button[aria-selected="true"] { color: var(--ink); background: var(--panel); position: relative; top: 1px; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: end; font-size: 12px; }
+.ctl { display: grid; gap: 2px; }
+.ctl label, .lbl { font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+select, input { font: inherit; font-size: 12px; color: var(--ink); background: var(--panel); border: 1px solid var(--rule); border-radius: 2px; padding: 4px 6px; min-width: 0; }
+input[type="search"] { width: 140px; } input[type="date"] { width: 140px; }
+.row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 2px; overflow: hidden; background: var(--panel); flex-wrap: wrap; }
+.seg button { font: inherit; font-size: 12px; color: var(--ink); background: none; border: 0; padding: 4px 9px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+.chk { display: inline-flex; gap: 5px; align-items: center; padding: 4px 0; }
+.chk input { margin: 0; }
+button:focus-visible, select:focus-visible, input:focus-visible, tr.team:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
+.status { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.tablebox { overflow-x: auto; border-top: 1px solid var(--rule); }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { padding: 3px 7px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--rule-soft); line-height: 1.5; }
+th { background: var(--head); font-size: 11.5px; font-weight: 700; color: var(--ink); position: sticky; top: 0; z-index: 2; border-bottom: 1px solid var(--rule); }
+thead tr.grp th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); text-align: center; background: var(--panel); border-bottom: 0; top: 0; padding-bottom: 0; }
+thead tr#hdr th { top: 20px; }
+th button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+th[aria-sort] button { text-decoration: underline; }
+th[aria-sort="descending"] button::after { content: " ▾"; } th[aria-sort="ascending"] button::after { content: " ▴"; }
+.l { text-align: left; }
+.sticky { position: sticky; left: 0; background: var(--panel); z-index: 1; }
+th.sticky { z-index: 3; background: var(--head); }
+tbody tr:nth-child(even of .team) td { background: var(--stripe); }
+tbody tr:nth-child(even of .team) td.sticky { background: var(--stripe); }
+td.team { font-weight: 700; color: var(--link); cursor: pointer; }
+td.conf, td.rec { color: var(--muted); font-size: 11.5px; }
+td.rk { color: var(--muted); }
+.sep { border-left: 1px solid var(--rule); }
+tr.team td.team::before { content: "▸ "; color: var(--muted); font-size: 9px; }
+tr.team.open td.team::before { content: "▾ "; }
+tr.pin td, tr.pin td.sticky { background: var(--hi) !important; }
+sub.r { font-size: var(--fs-rank); color: var(--muted); vertical-align: baseline; position: relative; top: 0.25em; margin-left: 2px; font-weight: 400; }
+td.pos { color: rgb(var(--good)); } td.neg { color: rgb(var(--bad)); }
+tr.log td { font-size: 11.5px; color: var(--muted); background: var(--panel) !important; border-bottom-color: transparent; }
+tr.log td.sticky { padding-left: 24px; }
+tr.log.last td { border-bottom: 1px solid var(--rule-soft); }
+tr.log td.w { color: rgb(var(--good)); font-weight: 700; } tr.log td.lz { color: rgb(var(--bad)); font-weight: 700; }
+.empty { padding: 20px; color: var(--muted); text-align: center; }
+.boards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.board { border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; min-width: 0; }
+.board h2 { margin: 0; font-size: 13px; padding: 6px 9px; background: var(--head); border-bottom: 1px solid var(--rule); }
+.board h3 { margin: 0; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 6px 9px 2px; }
+.board table { min-width: 0; } .board th { position: static; font-size: 11px; }
+.board td.team { cursor: default; } .board td.team::before { content: none; }
+.faq { display: grid; gap: 18px; max-width: 86ch; }
+.faq h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; margin: 0; padding-bottom: 4px; border-bottom: 1px solid var(--rule); }
+.faq dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 5px 14px; }
+.faq dt { font-weight: 700; white-space: nowrap; }
+.faq p.about { margin: 0; } .faq .em { font-weight: 700; user-select: all; } .faq dd { margin: 0; color: var(--ink); }
+@media (max-width: 600px) { .faq dl { grid-template-columns: 1fr; gap: 2px; } .faq dd { margin-bottom: 8px; color: var(--muted); } }
+.notes { color: var(--muted); font-size: 12px; max-width: 82ch; display: grid; gap: 6px; }
+.notes h2 { font-size: 12.5px; color: var(--ink); margin: 6px 0 0; text-transform: uppercase; letter-spacing: 0.05em; }
+.notes p { margin: 0; }
+@media (max-width: 600px) { :root { --fs: 11.5px; --fs-rank: 8.5px; } th, td { padding: 3px 5px; } h1 { font-size: 19px; } input[type="date"], input[type="search"] { width: 128px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header><h1 id="h1">2026 College Football Ratings</h1><span class="tag"><b>VosCFB.com</b> · opponent-adjusted FBS efficiency from play-by-play · data through <span id="thru">__THRU__</span></span></header>
+
+  <nav class="tabs" id="tabs" role="tablist">
+    <button type="button" role="tab" data-v="rating" aria-selected="true">Ratings</button>
+    <button type="button" role="tab" data-v="eff" aria-selected="false">Efficiency detail</button>
+    <button type="button" role="tab" data-v="tal" aria-selected="false">Talent</button>
+    <button type="button" role="tab" data-v="ou" aria-selected="false">Over / Under</button>
+    <button type="button" role="tab" data-v="faq" aria-selected="false">FAQ</button>
+  </nav>
+
+  <div class="controls">
+    <div class="ctl"><span class="lbl">Season</span><div class="seg" id="season" role="group" aria-label="Season"></div></div>
+    <div class="ctl"><span class="lbl">Date window</span>
+      <div class="row"><input type="date" id="from" aria-label="From date"> <span class="lbl">to</span> <input type="date" id="to" aria-label="To date">
+        <div class="seg" id="preset" role="group" aria-label="Quick windows"><button type="button" data-v="all">Season</button><button type="button" data-v="l30">Last 30 d</button><button type="button" data-v="l14">Last 14 d</button></div></div></div>
+    <div class="ctl"><span class="lbl">Games</span><div class="row"><label class="chk"><input type="checkbox" id="confonly"> Conference only</label><label class="chk"><input type="checkbox" id="nopost"> No bowls/CFP</label></div></div>
+    <div class="ctl" id="modewrap"><span class="lbl">Rows</span><div class="seg" id="mode" role="group" aria-label="Group by"><button type="button" data-v="team" aria-pressed="true">Teams</button><button type="button" data-v="conf" aria-pressed="false">Conferences</button></div></div>
+    <div class="ctl"><label for="conf">Conference</label><select id="conf"></select></div>
+    <div class="ctl" id="qwrap"><label for="q">Find team</label><input id="q" type="search" placeholder="e.g. Texas" autocomplete="off"></div>
+  </div>
+
+  <div class="status"><span id="stat"></span><span id="hint"></span></div>
+
+  <div class="tablebox" id="tablebox">
+    <table id="tbl"><thead><tr class="grp" id="grp"></tr><tr id="hdr"></tr></thead><tbody id="body"></tbody></table>
+  </div>
+  <div class="boards" id="boards" hidden></div>
+  <div class="faq" id="faq" hidden></div>
+
+  <section class="notes" id="notes"></section>
+</div>
+
+<script>
+const DATA = __DATA__; // current season inline; others fetched from data/<year>.json
+const SEASONS = __SEASONS__;
+const TAL = __TAL__; // season -> team -> [offTalent, defTalent, stTalent, ratedPlayers]
+// game row: 0 date, 1 team, 2 opp, 3 loc(H/A/N), 4 confGame, 5 post, 6 pts, 7 oppPts, 8 offPlays, 9 offEPA, 10 offSucc, 11 defPlays, 12 defEPA, 13 defSucc, 14 stKO, 15 stP, 16 paceSecs, 17 pacePlays
+const state = { view: "rating", season: "2026", from: "", to: "", confonly: false, nopost: false, mode: "team", conf: "All", q: "", sort: {}, dir: {}, open: ["Texas"] };
+try { Object.assign(state, JSON.parse(localStorage.getItem("gl3") || "{}")); } catch (e) {}
+state.open = new Set(state.open); if (!["rating", "eff", "tal", "ou", "faq"].includes(state.view)) state.view = "rating";
+if (!SEASONS.includes(state.season)) state.season = SEASONS[SEASONS.length - 1];
+function save() { try { localStorage.setItem("gl3", JSON.stringify({ ...state, open: [...state.open] })); } catch (e) {} }
+const $ = (id) => document.getElementById(id);
+const sgn = (v, d) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d);
+const pctf = (v) => (v * 100).toFixed(1) + "%";
+
+const COLSETS = {
+  rating: [
+    { id: "net", label: "Rating", fmt: v => sgn(v, 1), bold: true, sep: true, rank: true },
+    { id: "aoff", label: "AdjO", fmt: v => sgn(v, 3), rank: true },
+    { id: "adef", label: "AdjD", fmt: v => sgn(v, 3), lower: true, rank: true },
+    { id: "ast", label: "AdjST", fmt: v => sgn(v, 1), rank: true },
+    { id: "pace", label: "Tempo", fmt: v => v.toFixed(1), lower: true, rank: true, neutral: true },
+    { id: "ttm", label: "Talent", fmt: v => v.toFixed(1), rank: true, sep: true },
+    { id: "vnet", label: "vs Talent", fmt: v => sgn(v, 1), rank: true, signed: true },
+  ],
+  eff: [
+    { id: "net", label: "Rating", fmt: v => sgn(v, 1), bold: true, sep: true, rank: true },
+    { id: "aoff", label: "AdjO", fmt: v => sgn(v, 3), rank: true },
+    { id: "adef", label: "AdjD", fmt: v => sgn(v, 3), lower: true, rank: true },
+    { id: "ast", label: "AdjST", fmt: v => sgn(v, 1), rank: true },
+    { id: "off", label: "Off EPA/p", fmt: v => sgn(v, 3), sep: true, rank: true },
+    { id: "def", label: "Def EPA/p", fmt: v => sgn(v, 3), lower: true, rank: true },
+    { id: "osr", label: "Off SR", fmt: pctf, rank: true },
+    { id: "dsr", label: "Def SR", fmt: pctf, lower: true, rank: true },
+    { id: "st", label: "ST pts/g", fmt: v => sgn(v, 1), rank: true },
+    { id: "pace", label: "Tempo", fmt: v => v.toFixed(1), lower: true, rank: true, neutral: true },
+  ],
+  tal: [
+    { id: "net", label: "Rating", fmt: v => sgn(v, 1), bold: true, sep: true, rank: true },
+    { id: "toff", label: "Off", fmt: v => v.toFixed(1), sep: true, rank: true },
+    { id: "tdef", label: "Def", fmt: v => v.toFixed(1), rank: true },
+    { id: "tst", label: "ST", fmt: v => v.toFixed(1), rank: true },
+    { id: "ttm", label: "Team", fmt: v => v.toFixed(1), rank: true },
+    { id: "voff", label: "Off ±", fmt: v => sgn(v, 3), sep: true, rank: true, signed: true },
+    { id: "vdef", label: "Def ±", fmt: v => sgn(v, 3), rank: true, signed: true },
+    { id: "vst", label: "ST ±", fmt: v => sgn(v, 1), rank: true, signed: true },
+    { id: "vnet", label: "Net ±", fmt: v => sgn(v, 1), rank: true, signed: true, bold: true },
+  ],
+};
+const GRPS = {
+  rating: '<th class="sticky"></th><th colspan="4"></th><th colspan="5" class="sep">Adjusted efficiency</th><th colspan="2" class="sep">Roster</th>',
+  eff: '<th class="sticky"></th><th colspan="4"></th><th colspan="4" class="sep">Opponent-adjusted</th><th colspan="6" class="sep">Raw</th>',
+  tal: '<th class="sticky"></th><th colspan="4"></th><th class="sep"></th><th colspan="4" class="sep">Talent composite</th><th colspan="4" class="sep">Performance vs talent</th>',
+};
+const FAQ = `
+<section><h2>Tabs</h2><dl>
+<dt>Ratings</dt><dd>The home sheet: every FBS team ranked by overall Rating, with its adjusted offense, defense, kicking game, tempo, roster talent, and performance against that talent.</dd>
+<dt>Efficiency detail</dt><dd>The same adjusted numbers next to the raw, unadjusted ones (EPA per play, success rate, kicking points, tempo) so you can see how much schedule strength moved each team.</dd>
+<dt>Talent</dt><dd>Recruiting composites for each side of the ball and the gap between what each unit produces and what its talent predicts.</dd>
+<dt>Over / Under</dt><dd>Three boards (offense, defense, special teams) listing the five units doing the most and the least with their talent in the selected window.</dd>
+</dl></section>
+<section><h2>Controls</h2><dl>
+<dt>Season</dt><dd>Switches between the 2025 and 2026 play-by-play datasets.</dd>
+<dt>Date window</dt><dd>Limits every number on the page to games played between the two dates, and re-runs the opponent adjustment on just those games.</dd>
+<dt>Conference only / No bowls</dt><dd>Drops non-conference or postseason games from the window before anything is computed.</dd>
+<dt>Rows</dt><dd>Shows individual teams, or averages each conference's members into one row.</dd>
+<dt>Conference / Find team</dt><dd>Filters which rows display; ranks are still computed against all of FBS.</dd>
+<dt>Column headers</dt><dd>Click to sort; click again to flip direction.</dd>
+<dt>Team rows</dt><dd>Click a team to open its game-by-game log for the window.</dd>
+</dl></section>
+<section><h2>Stats</h2><dl>
+<dt>Rating</dt><dd>Points per game better or worse than an average FBS team against an average schedule, combining adjusted offense, defense, and kicking game.</dd>
+<dt>AdjO</dt><dd>Opponent-adjusted expected points added per offensive play; higher is better.</dd>
+<dt>AdjD</dt><dd>Opponent-adjusted expected points allowed per defensive play; lower is better.</dd>
+<dt>AdjST</dt><dd>Opponent-adjusted points per game gained or lost on kickoffs and punts, covering both kicking and returning.</dd>
+<dt>Tempo</dt><dd>Seconds of game clock per offensive snap within drives; lower is faster, and it is a style, not a strength.</dd>
+<dt>Talent</dt><dd>Average 247Sports composite rating of the top 22 rated offensive and top 22 defensive players on the roster.</dd>
+<dt>vs Talent / Net ±</dt><dd>Rating minus what a straight-line fit across FBS predicts from Talent; positive means the team is beating its roster.</dd>
+<dt>Off EPA/p, Def EPA/p</dt><dd>Raw expected points added per play on offense, and allowed on defense, with no schedule adjustment.</dd>
+<dt>Off SR, Def SR</dt><dd>Success rate: the share of plays that keep the offense on schedule (50% of needed yards on 1st down, 70% on 2nd, 100% on 3rd and 4th), for the offense and allowed by the defense.</dd>
+<dt>ST pts/g</dt><dd>Raw kickoff and punt points per game against an average FBS unit from the same field position.</dd>
+<dt>Off, Def, ST (Talent tab)</dt><dd>Composite rating of the top 22 offensive players, the top 22 defensive players, and the kicker, punter and long snapper.</dd>
+<dt>Off ±, Def ±, ST ±</dt><dd>Each unit's adjusted efficiency minus what its own talent predicts; Def ± is flipped so positive is always good.</dd>
+<dt>Small grey numbers</dt><dd>National rank in that column among all FBS teams in the window.</dd>
+<dt>G, W-L, Rk</dt><dd>Games in the window, record in those games, and rank in whichever column the sheet is sorted by.</dd>
+</dl></section>
+<section><h2>Method</h2><dl>
+<dt>Expected points (EPA)</dt><dd>The change in how many points a drive is expected to produce from before a play to after it, from the cfbfastR model on ESPN play-by-play.</dd>
+<dt>Opponent adjustment</dt><dd>Each game's result is credited against the opponent's adjusted strength and a home-field term, then iterated to convergence with light shrinkage toward average, the same approach Torvik uses for basketball.</dd>
+<dt>What's excluded</dt><dd>Games against FCS opponents, and nothing else: garbage time is not filtered.</dd>
+<dt>Seasons</dt><dd>2019 through the current season; the source feed for 2019–2022 covers the regular season and conference championships only, and talent composites exist for 2025 onward, so the Talent columns and Over/Under boards are blank for earlier years.</dd>
+<dt>Data freshness</dt><dd>Ratings refresh automatically after each weekend from ESPN play-by-play; the header shows the date of the last game included.</dd>
+</dl></section>
+<section><h2>About</h2><p class="about">VosCFB.com was built by a former mortgage-backed securities trader who loves college athletics. I can be reached for questions or comments at <span class="em">jacob at equitycommercialholdings dot com</span>.</p></section>`;
+const DEFSORT = { rating: "net", eff: "net", tal: "vnet" };
+const NOTES = {
+  rating: `<h2>About</h2><p>VosCFB rates every FBS team from play-by-play data the way KenPom and Torvik rate basketball teams: opponent-adjusted efficiency on offense, defense and the kicking game, with roster talent alongside so you can see who is beating their recruiting and who is not.</p><h2>Reading the ratings</h2><p><b>Rating</b> is points per game better or worse than an average FBS team against an average schedule: adjusted offense minus adjusted defense, scaled to a league-average number of plays, plus the adjusted kicking game. <b>AdjO</b> and <b>AdjD</b> are opponent-adjusted expected points added per play (offense higher is better; defense is what it allows, so lower is better). <b>AdjST</b> is kickoff and punt points per game. <b>Tempo</b> is seconds per offensive snap within drives. <b>Talent</b> is the roster's recruiting composite; <b>vs Talent</b> is the rating minus what talent alone predicts. Small grey numbers are national ranks.</p><p>Adjustment follows the Torvik approach: each game is credited against the opponent's adjusted strength and a home-field term, then iterated to convergence with light shrinkage so short windows stay sane. The solve runs in your browser on the games in the selected window. FBS-vs-FBS games only; not garbage-time filtered. Expected points from the cfbfastR model on ESPN play-by-play.</p>`,
+  eff: `<h2>Raw columns</h2><p>Unadjusted EPA per play, success rate (plays that stay on schedule), kicking-game points per game, and tempo. Tempo is measured drive-start to next-drive-start so it reflects how fast the offense operates with the ball, not possession length.</p>`,
+  tal: `<h2>Talent columns</h2><p>Composites built from 247Sports roster ratings by position: average rating of the top 22 rated offensive players, top 22 defensive players, and the kicker, punter and long snapper. Team is the mean of offense and defense. The ± columns are the adjusted metric minus a straight-line fit across all FBS teams on that side's talent, so positive means outperforming the roster; Def ± is flipped so positive is good. Specialists are often unrated, so ST talent is blank for some teams. Nine 2025 rosters were unavailable from 247 and show blank.</p>`,
+  faq: "",
+  ou: `<h2>Over / under</h2><p>Each board ranks units by performance relative to their talent profile for the selected window: adjusted efficiency minus what the FBS-wide talent fit predicts. Offense and defense ± are in EPA per play; special teams in points per game. The conference filter narrows the boards; the fit itself always uses all FBS.</p>`,
+};
+
+function bounds() { const g = DATA[state.season].games; let mn = "9", mx = "0"; for (const r of g) { if (r[0] < mn) mn = r[0]; if (r[0] > mx) mx = r[0]; } return [mn, mx]; }
+function shift(d, days) { const t = new Date(d + "T12:00:00Z"); t.setUTCDate(t.getUTCDate() + days); return t.toISOString().slice(0, 10); }
+function filtered() { const [mn, mx] = bounds(); const f = state.from || mn, t = state.to || mx; return DATA[state.season].games.filter(r => r[0] >= f && r[0] <= t && (!state.confonly || r[4]) && (!state.nopost || !r[5])); }
+function fit(pairs) { const n = pairs.length; if (n < 8) return null; let sx = 0, sy = 0, sxx = 0, sxy = 0; for (const [x, y] of pairs) { sx += x; sy += y; sxx += x * x; sxy += x * y; } const b = (n * sxy - sx * sy) / (n * sxx - sx * sx || 1); return { a: (sy - b * sx) / n, b }; }
+
+function compute(rows) {
+  const T = {};
+  for (const r of rows) {
+    const t = T[r[1]] ||= { g: 0, w: 0, l: 0, oP: 0, oE: 0, oS: 0, dP: 0, dE: 0, dS: 0, st: 0, ps: 0, pn: 0, log: [] };
+    t.g++; if (r[6] != null && r[7] != null) { r[6] > r[7] ? t.w++ : r[6] < r[7] ? t.l++ : 0; }
+    t.oP += r[8]; t.oE += r[9]; t.oS += r[10]; t.dP += r[11]; t.dE += r[12]; t.dS += r[13]; t.st += r[14] + r[15]; t.ps += r[16]; t.pn += r[17]; t.log.push(r);
+  }
+  let totP = 0, totE = 0, n = 0, hO = 0, hN = 0, aO = 0, aN = 0, hS = 0, aS = 0;
+  for (const r of rows) { totP += r[8]; totE += r[9]; n++; const o = r[9] / r[8], s = r[14] + r[15]; if (r[3] === "H") { hO += o; hS += s; hN++; } else if (r[3] === "A") { aO += o; aS += s; aN++; } }
+  const mu = totE / totP, P = totP / n, hfa = hN && aN ? (hO / hN - aO / aN) / 2 : 0, hfaS = hN && aN ? (hS / hN - aS / aN) / 2 : 0;
+  const K = 1.5, names = Object.keys(T), aO_ = {}, aD_ = {}, aS_ = {};
+  for (const k of names) { aO_[k] = 0; aD_[k] = 0; aS_[k] = 0; }
+  for (let it = 0; it < 40; it++) {
+    const nO = {}, nD = {}, nS = {};
+    for (const k of names) {
+      let so = 0, sd = 0, ss = 0;
+      for (const r of T[k].log) { const loc = r[3] === "H" ? 1 : r[3] === "A" ? -1 : 0, opp = r[2];
+        so += (r[9] / r[8] - mu - loc * hfa) - (aD_[opp] || 0); sd += (r[12] / r[11] - mu + loc * hfa) - (aO_[opp] || 0); ss += (r[14] + r[15] - loc * hfaS) + (aS_[opp] || 0); }
+      const d = T[k].g + K; nO[k] = so / d; nD[k] = sd / d; nS[k] = ss / d;
+    }
+    Object.assign(aO_, nO); Object.assign(aD_, nD); Object.assign(aS_, nS);
+  }
+  const out = [];
+  for (const k of names) { const t = T[k];
+    out.push({ id: k, name: k, sub: DATA[state.season].teams[k] || "—", g: t.g, rec: `${t.w}-${t.l}`, log: t.log, v: {
+      net: (aO_[k] - aD_[k]) * P + aS_[k], aoff: mu + aO_[k], adef: mu + aD_[k], ast: aS_[k],
+      off: t.oE / t.oP, def: t.dE / t.dP, osr: t.oS / t.oP, dsr: t.dS / t.dP, st: t.st / t.g, pace: t.pn ? t.ps / t.pn : null } }); }
+  const tal = TAL[state.season] || {};
+  for (const r of out) { const x = tal[r.id]; r.v.toff = x ? x[0] : null; r.v.tdef = x ? x[1] : null; r.v.tst = x ? x[2] : null; r.v.ttm = x && x[0] != null && x[1] != null ? (x[0] + x[1]) / 2 : null; }
+  const fo = fit(out.filter(r => r.v.toff != null).map(r => [r.v.toff, r.v.aoff])), fd = fit(out.filter(r => r.v.tdef != null).map(r => [r.v.tdef, r.v.adef]));
+  const fs = fit(out.filter(r => r.v.tst != null).map(r => [r.v.tst, r.v.ast])), fn = fit(out.filter(r => r.v.ttm != null).map(r => [r.v.ttm, r.v.net]));
+  for (const r of out) {
+    r.v.voff = fo && r.v.toff != null ? r.v.aoff - (fo.a + fo.b * r.v.toff) : null;
+    r.v.vdef = fd && r.v.tdef != null ? (fd.a + fd.b * r.v.tdef) - r.v.adef : null;
+    r.v.vst = fs && r.v.tst != null ? r.v.ast - (fs.a + fs.b * r.v.tst) : null;
+    r.v.vnet = fn && r.v.ttm != null ? r.v.net - (fn.a + fn.b * r.v.ttm) : null;
+  }
+  return { teams: out, P, nGames: rows.length / 2 };
+}
+function confRows(teams) {
+  const by = {}; for (const t of teams) (by[t.sub] ||= []).push(t);
+  const ids = new Set(Object.values(COLSETS).flat().map(c => c.id));
+  return Object.entries(by).map(([c, ts]) => { const v = {}; for (const id of ids) { const xs = ts.map(t => t.v[id]).filter(x => x != null); v[id] = xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : null; }
+    return { id: "c:" + c, name: c, sub: ts.length + " teams", g: ts.reduce((s, t) => s + t.g, 0), rec: "", v }; });
+}
+function ranker(all, c) { const s = all.map(r => r.v[c.id]).filter(v => v != null).sort((a, b) => c.lower ? a - b : b - a); return v => v == null ? null : s.indexOf(v) + 1; }
+function cell(c, v, rk, isTeam) {
+  if (v == null) return `<td class="${c.sep ? "sep" : ""}">—</td>`;
+  const cls = [c.sep ? "sep" : "", c.signed ? (v > 0 ? "pos" : v < 0 ? "neg" : "") : ""].join(" ");
+  return `<td class="${cls}" style="${c.bold ? "font-weight:700" : ""}">${c.fmt(v)}${c.rank && isTeam && rk != null ? `<sub class="r">${rk}</sub>` : ""}</td>`;
+}
+
+async function ensureSeason(y) {
+  if (DATA[y]) return true;
+  try { const r = await fetch(`data/${y}.json`); if (!r.ok) throw new Error(r.status); DATA[y] = await r.json(); return true; }
+  catch (e) { $("stat").textContent = `Could not load ${y} data (${e.message}).`; return false; }
+}
+function render() {
+  if (!DATA[state.season]) { $("stat").textContent = `Loading ${state.season}…`; ensureSeason(state.season).then(ok => { if (!ok) { state.season = SEASONS[SEASONS.length - 1]; } render(); }); return; }
+  const [mn, mx] = bounds();
+  for (const b of $("tabs").children) b.setAttribute("aria-selected", b.dataset.v === state.view);
+  $("h1").textContent = `${state.season} College Football Ratings`; document.title = `VosCFB · ${state.season} College Football Ratings`;
+  $("season").innerHTML = [...SEASONS].reverse().map(y => `<button type="button" data-v="${y}" aria-pressed="${y === state.season}">${y}</button>`).join("");
+  for (const b of $("mode").children) b.setAttribute("aria-pressed", b.dataset.v === state.mode);
+  $("from").min = $("to").min = mn; $("from").max = $("to").max = mx;
+  if (state.from && (state.from < mn || state.from > mx)) state.from = ""; if (state.to && (state.to < mn || state.to > mx)) state.to = "";
+  $("from").value = state.from || mn; $("to").value = state.to || mx; $("confonly").checked = state.confonly; $("nopost").checked = state.nopost;
+  const confs = [...new Set(Object.values(DATA[state.season].teams))].sort();
+  if (state.conf !== "All" && !confs.includes(state.conf)) state.conf = "All";
+  $("conf").innerHTML = ["All", ...confs].map(c => `<option value="${c}" ${c === state.conf ? "selected" : ""}>${c === "All" ? "All FBS" : c}</option>`).join("");
+  const faq = state.view === "faq", ou = state.view === "ou" || faq, isTeam = state.mode === "team" || ou;
+  $("faq").hidden = !faq; $("faq").innerHTML = faq ? FAQ : "";
+  document.querySelector(".controls").hidden = faq; document.querySelector(".status").hidden = faq;
+  $("modewrap").hidden = ou; $("qwrap").hidden = ou; $("conf").disabled = !isTeam; $("q").disabled = !isTeam; $("q").value = state.q;
+  $("notes").innerHTML = NOTES[state.view];
+
+  const rows = filtered();
+  $("tablebox").hidden = ou; $("boards").hidden = !ou || faq;
+  if (faq) { save(); return; }
+  if (!rows.length) { $("body").innerHTML = `<tr><td colspan="16" class="empty">No games in this window. Widen the dates or clear the filters.</td></tr>`; $("boards").innerHTML = `<div class="empty">No games in this window.</div>`; $("stat").textContent = ""; save(); return; }
+  const { teams, P, nGames } = compute(rows);
+  $("stat").textContent = `${nGames} games · ${teams.length} teams · ${$("from").value} → ${$("to").value} · ${P.toFixed(0)} plays/team/game`;
+  $("hint").textContent = ou ? "" : "Click a team for its game log. Small numbers are national ranks.";
+  if (ou) { renderBoards(teams); save(); return; }
+
+  const C = COLSETS[state.view], sortId = state.sort[state.view] || DEFSORT[state.view], dir = state.dir[state.view] ?? -1;
+  $("grp").innerHTML = GRPS[state.view];
+  $("hdr").innerHTML = `<th class="sticky l">${isTeam ? "Team" : "Conference"}</th><th class="l">${isTeam ? "Conf" : "Size"}</th><th>G</th><th>W-L</th><th>Rk</th>` +
+    C.map(c => `<th class="${c.sep ? "sep" : ""}" ${sortId === c.id ? `aria-sort="${dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button" data-sort="${c.id}">${c.label}</button></th>`).join("");
+  const all = isTeam ? teams : confRows(teams);
+  const rank = {}; for (const c of C) rank[c.id] = ranker(all, c);
+  let list = all;
+  if (isTeam && state.conf !== "All") list = list.filter(r => r.sub === state.conf);
+  if (isTeam && state.q.trim()) { const q = state.q.trim().toLowerCase(); list = list.filter(r => r.name.toLowerCase().includes(q)); }
+  const sc = C.find(c => c.id === sortId) || C[0], nv = v => v == null ? (sc.lower ? Infinity : -Infinity) : v;
+  list = [...list].sort((a, b) => (nv(a.v[sc.id]) - nv(b.v[sc.id])) * (sc.lower ? 1 : -1) * (dir < 0 ? 1 : -1) || a.name.localeCompare(b.name));
+  if (!list.length) { $("body").innerHTML = `<tr><td colspan="16" class="empty">No teams match “${state.q}”.</td></tr>`; save(); return; }
+  const html = [];
+  for (const r of list) {
+    const open = isTeam && state.open.has(r.id), rk = rank[sc.id](r.v[sc.id]);
+    html.push(`<tr class="team${open ? " open" : ""}${r.id === "Texas" ? " pin" : ""}" data-id="${r.id}" tabindex="0" aria-expanded="${open}">` +
+      `<td class="sticky l team">${r.name}</td><td class="l conf">${r.sub}</td><td>${r.g}</td><td class="rec">${r.rec}</td><td class="rk">${rk ?? "—"}</td>` +
+      C.map(c => cell(c, r.v[c.id], rank[c.id](r.v[c.id]), isTeam)).join("") + `</tr>`);
+    if (open) {
+      const log = [...r.log].sort((a, b) => a[0] < b[0] ? -1 : 1);
+      log.forEach((g, j) => {
+        const res = g[6] == null ? "" : `${g[6] > g[7] ? "W" : g[6] < g[7] ? "L" : "T"} ${g[6]}–${g[7]}`, cls = g[6] > g[7] ? "w" : g[6] < g[7] ? "lz" : "", where = g[3] === "H" ? "vs" : g[3] === "A" ? "@" : "N";
+        const o = sgn(g[9] / g[8], 3), d = sgn(g[12] / g[11], 3), s = sgn(g[14] + g[15], 1), pc = g[17] ? (g[16] / g[17]).toFixed(1) : "—";
+        const tail = state.view === "eff" ? `<td class="sep"></td><td></td><td></td><td></td><td class="sep">${o}</td><td>${d}</td><td>${pctf(g[10] / g[8])}</td><td>${pctf(g[13] / g[11])}</td><td>${s}</td><td>${pc}</td>`
+          : state.view === "tal" ? `<td class="sep"></td><td class="sep"></td><td></td><td></td><td></td><td class="sep">${o}</td><td>${d}</td><td>${s}</td><td></td>`
+          : `<td class="sep"></td><td>${o}</td><td>${d}</td><td>${s}</td><td>${pc}</td><td class="sep"></td><td></td>`;
+        html.push(`<tr class="log${j === log.length - 1 ? " last" : ""}"><td class="sticky l">${g[0].slice(5)} · ${where} ${g[2]}${g[5] ? " (post)" : ""}</td><td class="l conf">${g[4] ? "conf" : "non-conf"}</td><td></td><td class="${cls}">${res}</td><td></td>${tail}</tr>`);
+      });
+    }
+  }
+  $("body").innerHTML = html.join(""); save();
+}
+
+function renderBoards(teams) {
+  const units = [
+    { title: "Offense", tal: "toff", adj: "aoff", res: "voff", unit: "EPA/play", fmtA: v => sgn(v, 3), fmtR: v => sgn(v, 3) },
+    { title: "Defense", tal: "tdef", adj: "adef", res: "vdef", unit: "EPA/play allowed", fmtA: v => sgn(v, 3), fmtR: v => sgn(v, 3) },
+    { title: "Special teams", tal: "tst", adj: "ast", res: "vst", unit: "pts/game", fmtA: v => sgn(v, 1), fmtR: v => sgn(v, 1) },
+  ];
+  const pool = state.conf === "All" ? teams : teams.filter(t => t.sub === state.conf);
+  $("boards").innerHTML = units.map(u => {
+    const list = pool.filter(t => t.v[u.res] != null).sort((a, b) => b.v[u.res] - a.v[u.res]);
+    const n = list.length, tbl = (rows, label, start) => `<h3>${label}</h3><table><thead><tr><th class="l">#</th><th class="l">Team</th><th>Talent</th><th>Adj (${u.unit})</th><th>vs talent</th></tr></thead><tbody>` +
+      rows.map((t, i) => `<tr class="team${t.id === "Texas" ? " pin" : ""}"><td class="l rk">${start + i}</td><td class="l team">${t.name}<sub class="r">${t.sub}</sub></td><td>${t.v[u.tal].toFixed(1)}</td><td>${u.fmtA(t.v[u.adj])}</td><td class="${t.v[u.res] > 0 ? "pos" : "neg"}" style="font-weight:700">${u.fmtR(t.v[u.res])}</td></tr>`).join("") + `</tbody></table>`;
+    return `<div class="board"><h2>${u.title} <span class="tag">· ${n} teams rated</span></h2>${n ? tbl(list.slice(0, 5), "Overachieving", 1) + tbl(list.slice(-5), "Underachieving", Math.max(1, n - 4)) : `<div class="empty">Not enough rated teams.</div>`}</div>`;
+  }).join("");
+}
+
+document.addEventListener("click", (e) => {
+  const tab = e.target.closest("#tabs button"); if (tab) { state.view = tab.dataset.v; render(); return; }
+  const b = e.target.closest("button[data-v]");
+  if (b) { const id = b.parentElement.id;
+    if (id === "preset") { const [mn, mx] = bounds(); state.to = ""; state.from = b.dataset.v === "all" ? "" : shift(mx, b.dataset.v === "l30" ? -30 : -14); if (state.from < mn) state.from = ""; }
+    else state[id] = b.dataset.v; render(); return; }
+  const s = e.target.closest("button[data-sort]");
+  if (s) { const id = s.dataset.sort, cur = state.sort[state.view] || DEFSORT[state.view]; state.dir[state.view] = cur === id ? -(state.dir[state.view] ?? -1) : -1; state.sort[state.view] = id; render(); return; }
+  const tr = e.target.closest("tr.team[data-id]");
+  if (tr && state.mode === "team") { const id = tr.dataset.id; state.open.has(id) ? state.open.delete(id) : state.open.add(id); render(); }
+});
+document.addEventListener("keydown", (e) => { const tr = e.target.closest && e.target.closest("tr.team[data-id]"); if (tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); tr.click(); } });
+$("from").addEventListener("change", e => { state.from = e.target.value; if (state.to && state.from > state.to) state.to = state.from; render(); });
+$("to").addEventListener("change", e => { state.to = e.target.value; if (state.from && state.to < state.from) state.from = state.to; render(); });
+$("confonly").addEventListener("change", e => { state.confonly = e.target.checked; render(); });
+$("nopost").addEventListener("change", e => { state.nopost = e.target.checked; render(); });
+$("conf").addEventListener("change", e => { state.conf = e.target.value; render(); });
+$("q").addEventListener("input", e => { state.q = e.target.value; render(); $("q").focus(); });
+render();
+</script>

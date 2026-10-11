@@ -1,0 +1,58 @@
+name: Refresh ratings
+
+on:
+  schedule:
+    # Sunday 11:10 UTC (7:10 am ET) after Saturday games land in cfbfastR-data,
+    # and Tuesday 11:10 UTC for corrections and weeknight games.
+    - cron: "10 11 * * 0,2"
+  workflow_dispatch:
+    inputs:
+      seasons:
+        description: "Seasons to rebuild (space-separated)"
+        default: "2026"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install numpy pandas
+
+      - name: Build data and page
+        run: python pipeline/build.py ${{ github.event.inputs.seasons || '2026' }}
+
+      - name: Commit refreshed data
+        run: |
+          git config user.name "voscfb-bot"
+          git config user.email "bot@voscfb.com"
+          git add site/data site/index.html
+          git diff --cached --quiet || git commit -m "Refresh ratings $(date -u +%Y-%m-%d)"
+          git push
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
