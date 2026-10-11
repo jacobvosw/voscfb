@@ -128,7 +128,8 @@ def main():
     for y in seasons:
         prev = str(int(y) - 1)
         fp = os.path.join(ddir, f'{y}.json'); d = json.load(open(fp))
-        d['prior'] = model.prior_from(json.load(open(os.path.join(ddir, f'{prev}.json')))['games']) if prev in seasons else {}
+        tal = json.load(open(os.path.join(ROOT, 'data', 'talent.json'))).get(y)
+        d['prior'] = model.prior_from(json.load(open(os.path.join(ddir, f'{prev}.json')))['games'], tal) if prev in seasons else {}
         json.dump(d, open(fp, 'w'), separators=(',', ':'))
     thru = max(json.load(open(os.path.join(ddir, f'{y}.json')))['thru'] for y in seasons)
     current = seasons[-1]

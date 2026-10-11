@@ -17,6 +17,7 @@ MOV_W = 0.4         # share of the rating from adjusted scoring margin
 MOV_CAP = 28        # cap on a single game's margin
 GT = {2: 38, 3: 28, 4: 22}   # garbage time: lead larger than this in that quarter
 EPA_CAP = 4.5       # cap on a single play's EPA
+TALENT_PTS = 2.5    # prior margin points per talent-composite point vs FBS average (seasons with talent data)
 
 
 def st(r):
@@ -54,7 +55,15 @@ def rate(rows, prior=None, iters=40):
     return {k: (aO[k], aD[k], aS[k], M[k]) for k in T}
 
 
-def prior_from(prev_rows):
-    """Last season's final ratings, decayed, as next season's prior."""
+def prior_from(prev_rows, talent=None):
+    """Last season's final ratings, decayed, as next season's prior.
+    If this season's roster talent is known, nudge the margin component by it."""
     R = rate(prev_rows)
-    return {k: [round(PRIOR_DECAY * x, 4) for x in v] for k, v in R.items()}
+    out = {k: [PRIOR_DECAY * x for x in v] for k, v in R.items()}
+    if talent:
+        tv = {k: (x[0] + x[1]) / 2 for k, x in talent.items() if x and x[0] is not None and x[1] is not None}
+        if tv:
+            mean = sum(tv.values()) / len(tv)
+            for k, t in tv.items():
+                out.setdefault(k, [0.0, 0.0, 0.0, 0.0])[3] += TALENT_PTS * (t - mean)
+    return {k: [round(x, 4) for x in v] for k, v in out.items()}
