@@ -128,7 +128,7 @@ const DATA = __DATA__; // current season inline; others fetched from data/<year>
 const SEASONS = __SEASONS__;
 const TAL = __TAL__; // season -> team -> [offTalent, defTalent, stTalent, ratedPlayers]
 // game row: 0 date, 1 team, 2 opp, 3 loc(H/A/N), 4 confGame, 5 post, 6 pts, 7 oppPts, 8 offPlays, 9 offEPA, 10 offSucc, 11 defPlays, 12 defEPA, 13 defSucc, 14 stKO, 15 stP, 16 paceSecs, 17 pacePlays
-const state = { view: "rating", season: "2026", from: "", to: "", confonly: false, nopost: false, mode: "team", conf: "All", q: "", sort: {}, dir: {}, open: ["Texas"] };
+const state = { view: "rating", season: "2026", from: "", to: "", confonly: false, nopost: false, mode: "team", conf: "All", q: "", sort: {}, dir: {}, open: [] };
 try { Object.assign(state, JSON.parse(localStorage.getItem("gl3") || "{}")); } catch (e) {}
 state.open = new Set(state.open); if (!["rating", "eff", "tal", "ou", "faq"].includes(state.view)) state.view = "rating";
 if (!SEASONS.includes(state.season)) state.season = SEASONS[SEASONS.length - 1];
