@@ -1,6 +1,6 @@
 # VosCFB
 
-Opponent-adjusted college football efficiency ratings, Torvik/KenPom style, built from ESPN play-by-play.
+Opponent-adjusted college football efficiency ratings built from ESPN play-by-play.
 
 Live at https://voscfb.com
 
