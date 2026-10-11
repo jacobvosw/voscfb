@@ -159,7 +159,8 @@ const COLSETS = {
     { id: "ast", label: "AdjST", fmt: v => sgn(v, 1), rank: true },
     { id: "pace", label: "Tempo", fmt: v => v.toFixed(1), lower: true, rank: true, neutral: true },
     { id: "ttm", label: "Talent", fmt: v => v.toFixed(1), rank: true, sep: true },
-    { id: "vnet", label: "vs Talent", fmt: v => sgn(v, 1), rank: true, signed: true },
+    { id: "vnet", label: "Perf", fmt: v => sgn(v, 1), rank: true, signed: true },
+    { id: "sos", label: "SOS", fmt: v => sgn(v, 1), rank: true, sep: true },
   ],
   eff: [
     { id: "net", label: "Rating", fmt: v => sgn(v, 1), bold: true, sep: true, rank: true },
@@ -186,7 +187,7 @@ const COLSETS = {
   ],
 };
 const GRPS = {
-  rating: '<th class="sticky"></th><th colspan="4"></th><th colspan="5" class="sep">Adjusted efficiency</th><th colspan="2" class="sep">Roster</th>',
+  rating: '<th class="sticky"></th><th colspan="4"></th><th colspan="5" class="sep">Adjusted efficiency</th><th colspan="2" class="sep">Roster</th><th class="sep">Schedule</th>',
   eff: '<th class="sticky"></th><th colspan="4"></th><th colspan="4" class="sep">Opponent-adjusted</th><th colspan="6" class="sep">Raw</th>',
   tal: '<th class="sticky"></th><th colspan="4"></th><th class="sep"></th><th colspan="4" class="sep">Talent composite</th><th colspan="4" class="sep">Performance vs talent</th>',
 };
@@ -213,7 +214,8 @@ const FAQ = `
 <dt>AdjST</dt><dd>Opponent-adjusted points per game gained or lost on kickoffs and punts, covering both kicking and returning.</dd>
 <dt>Tempo</dt><dd>Seconds of game clock per offensive snap within drives; lower is faster, and it is a style, not a strength.</dd>
 <dt>Talent</dt><dd>Average 247Sports composite rating of the top 22 rated offensive and top 22 defensive players on the roster.</dd>
-<dt>vs Talent / Net ±</dt><dd>Rating minus what a straight-line fit across FBS predicts from Talent; positive means the team is beating its roster.</dd>
+<dt>Perf / Net ±</dt><dd>Performance vs talent: Rating minus what a straight-line fit across FBS predicts from Talent; positive means the team is beating its roster.</dd>
+<dt>SOS</dt><dd>Strength of schedule: the average Rating of the opponents a team has played in the window; higher means a tougher schedule.</dd>
 <dt>Off EPA/p, Def EPA/p</dt><dd>Raw expected points added per play on offense, and allowed on defense, with no schedule adjustment.</dd>
 <dt>Off SR, Def SR</dt><dd>Success rate: the share of plays that keep the offense on schedule (50% of needed yards on 1st down, 70% on 2nd, 100% on 3rd and 4th), for the offense and allowed by the defense.</dd>
 <dt>ST pts/g</dt><dd>Raw kickoff and punt points per game against an average FBS unit from the same field position.</dd>
@@ -232,7 +234,7 @@ const FAQ = `
 <section><h2>About</h2><p class="about">VosCFB.com was built by a former mortgage-backed securities trader who loves college athletics. I can be reached for questions or comments at <span class="em">jacob at equitycommercialholdings dot com</span>.</p></section>`;
 const DEFSORT = { rating: "net", eff: "net", tal: "vnet" };
 const NOTES = {
-  rating: `<h2>About</h2><p>VosCFB rates every FBS team from play-by-play data: opponent-adjusted efficiency on offense, defense and the kicking game, with roster talent alongside so you can see who is beating their recruiting and who is not.</p><h2>Reading the ratings</h2><p><b>Rating</b> is points per game better or worse than an average FBS team against an average schedule: adjusted offense minus adjusted defense, scaled to a league-average number of plays, plus the adjusted kicking game. <b>AdjO</b> and <b>AdjD</b> are opponent-adjusted expected points added per play (offense higher is better; defense is what it allows, so lower is better). <b>AdjST</b> is kickoff and punt points per game. <b>Tempo</b> is seconds per offensive snap within drives. <b>Talent</b> is the roster's recruiting composite; <b>vs Talent</b> is the rating minus what talent alone predicts. Small grey numbers are national ranks.</p><p>Each game is credited against the opponent's adjusted strength and a home-field term, then iterated to convergence with light shrinkage so short windows stay sane. The solve runs in your browser on the games in the selected window. FBS-vs-FBS games only; not garbage-time filtered. Expected points from the cfbfastR model on ESPN play-by-play.</p>`,
+  rating: `<h2>About</h2><p>VosCFB rates every FBS team from play-by-play data: opponent-adjusted efficiency on offense, defense and the kicking game, with roster talent alongside so you can see who is beating their recruiting and who is not.</p><h2>Reading the ratings</h2><p><b>Rating</b> is points per game better or worse than an average FBS team against an average schedule: adjusted offense minus adjusted defense, scaled to a league-average number of plays, plus the adjusted kicking game. <b>AdjO</b> and <b>AdjD</b> are opponent-adjusted expected points added per play (offense higher is better; defense is what it allows, so lower is better). <b>AdjST</b> is kickoff and punt points per game. <b>Tempo</b> is seconds per offensive snap within drives. <b>Talent</b> is the roster's recruiting composite; <b>Perf</b> is the rating minus what talent alone predicts. <b>SOS</b> is the average Rating of opponents played. Small grey numbers are national ranks.</p><p>Each game is credited against the opponent's adjusted strength and a home-field term, then iterated to convergence with light shrinkage so short windows stay sane. The solve runs in your browser on the games in the selected window. FBS-vs-FBS games only; not garbage-time filtered. Expected points from the cfbfastR model on ESPN play-by-play.</p>`,
   eff: `<h2>Raw columns</h2><p>Unadjusted EPA per play, success rate (plays that stay on schedule), kicking-game points per game, and tempo. Tempo is measured drive-start to next-drive-start so it reflects how fast the offense operates with the ball, not possession length.</p>`,
   tal: `<h2>Talent columns</h2><p>Composites built from 247Sports roster ratings by position: average rating of the top 22 rated offensive players, top 22 defensive players, and the kicker, punter and long snapper. Team is the mean of offense and defense. The ± columns are the adjusted metric minus a straight-line fit across all FBS teams on that side's talent, so positive means outperforming the roster; Def ± is flipped so positive is good. Specialists are often unrated, so ST talent is blank for some teams. Nine 2025 rosters were unavailable from 247 and show blank.</p>`,
   faq: "",
@@ -281,6 +283,9 @@ function compute(rows) {
     r.v.vst = fs && r.v.tst != null ? r.v.ast - (fs.a + fs.b * r.v.tst) : null;
     r.v.vnet = fn && r.v.ttm != null ? r.v.net - (fn.a + fn.b * r.v.ttm) : null;
   }
+  // strength of schedule: average opponent Rating over the games in the window
+  const byName = Object.fromEntries(out.map(r => [r.id, r.v.net]));
+  for (const r of out) { const xs = r.log.map(g => byName[g[2]]).filter(x => x != null); r.v.sos = xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : null; }
   return { teams: out, P, nGames: rows.length / 2 };
 }
 function confRows(teams) {
