@@ -120,7 +120,7 @@ def main():
     tpl = open(os.path.join(ROOT, 'site', 'template.html')).read()
     pretty = pd.Timestamp(thru).strftime('%b %-d, %Y')
     html = (tpl.replace('__DATA__', json.dumps({current: cur}, separators=(',', ':')))
-               .replace('__SEASONS__', json.dumps(seasons)).replace('__TAL__', tal).replace('__THRU__', pretty))
+               .replace('__SEASONS__', json.dumps(seasons)).replace('__TAL__', tal))
     open(os.path.join(ROOT, 'site', 'index.html'), 'w').write(html)
     print('seasons', seasons, '| wrote site/index.html, data through', pretty)
 

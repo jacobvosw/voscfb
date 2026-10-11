@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>VosCFB</title>
 <style>
 /* Layout: KenPom/Torvik-style stat sheet. Plain sans type, white ground, dense rows, every value carries a small grey rank numeral. Tabs across the top; one filter strip; one table (or the over/under boards). */
@@ -16,8 +18,12 @@
 * { box-sizing: border-box; }
 body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: var(--fs); line-height: 1.35; }
 .wrap { max-width: 1240px; margin: 0 auto; padding-inline: 16px; padding-block: 14px 36px; display: grid; gap: 12px; }
-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; border-bottom: 2px solid var(--ink); padding-bottom: 6px; }
-h1 { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+header { display: grid; gap: 4px; text-align: center; border-bottom: 2px solid var(--ink); padding-bottom: 8px; }
+h1 { font-size: 26px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+h1 .site { color: var(--link); }
+.years { font-size: 14px; color: var(--muted); }
+.years button { font: inherit; color: var(--link); background: none; border: 0; padding: 0 2px; cursor: pointer; }
+.years button[aria-pressed="true"] { color: var(--ink); font-weight: 700; }
 .tag { color: var(--muted); font-size: 12px; }
 nav.tabs { display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 1px solid var(--rule); }
 nav.tabs button { font: inherit; font-size: 13px; font-weight: 700; color: var(--muted); background: var(--tab); border: 1px solid var(--rule); border-bottom: 0; padding: 6px 12px; cursor: pointer; border-radius: 3px 3px 0 0; }
@@ -26,7 +32,7 @@ nav.tabs button[aria-selected="true"] { color: var(--ink); background: var(--pan
 .ctl { display: grid; gap: 2px; }
 .ctl label, .lbl { font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
 select, input { font: inherit; font-size: 12px; color: var(--ink); background: var(--panel); border: 1px solid var(--rule); border-radius: 2px; padding: 4px 6px; min-width: 0; }
-input[type="search"] { width: 140px; } input[type="date"] { width: 140px; }
+input[type="search"] { width: 140px; }
 .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 2px; overflow: hidden; background: var(--panel); flex-wrap: wrap; }
 .seg button { font: inherit; font-size: 12px; color: var(--ink); background: none; border: 0; padding: 4px 9px; cursor: pointer; }
@@ -52,11 +58,12 @@ tbody tr:nth-child(even of .team) td { background: var(--stripe); }
 tbody tr:nth-child(even of .team) td.sticky { background: var(--stripe); }
 td.team { font-weight: 700; color: var(--link); cursor: pointer; }
 td.conf, td.rec { color: var(--muted); font-size: 11.5px; }
-td.rk { color: var(--muted); }
+td.rk { color: var(--muted); font-weight: 700; }
+td.rk.sh { color: var(--ink); background-color: rgb(var(--good) / var(--a)) !important; }
+td.rk.sh.lo { color: var(--ink); background-color: rgb(var(--bad) / var(--a)) !important; }
 .sep { border-left: 1px solid var(--rule); }
 tr.team td.team::before { content: "▸ "; color: var(--muted); font-size: 9px; }
 tr.team.open td.team::before { content: "▾ "; }
-tr.pin td, tr.pin td.sticky { background: var(--hi) !important; }
 sub.r { font-size: var(--fs-rank); color: var(--muted); vertical-align: baseline; position: relative; top: 0.25em; margin-left: 2px; font-weight: 400; }
 td.pos { color: rgb(var(--good)); } td.neg { color: rgb(var(--bad)); }
 tr.log td { font-size: 11.5px; color: var(--muted); background: var(--panel) !important; border-bottom-color: transparent; }
@@ -79,12 +86,13 @@ tr.log td.w { color: rgb(var(--good)); font-weight: 700; } tr.log td.lz { color:
 .notes { color: var(--muted); font-size: 12px; max-width: 82ch; display: grid; gap: 6px; }
 .notes h2 { font-size: 12.5px; color: var(--ink); margin: 6px 0 0; text-transform: uppercase; letter-spacing: 0.05em; }
 .notes p { margin: 0; }
-@media (max-width: 600px) { :root { --fs: 11.5px; --fs-rank: 8.5px; } th, td { padding: 3px 5px; } h1 { font-size: 19px; } input[type="date"], input[type="search"] { width: 128px; } }
+@media (max-width: 600px) { :root { --fs: 11.5px; --fs-rank: 8.5px; } th, td { padding: 3px 5px; } h1 { font-size: 19px; } input[type="search"] { width: 128px; }
+  #tbl { min-width: 0; table-layout: auto; } #tbl td.team { max-width: 96px; overflow: hidden; text-overflow: ellipsis; padding-left: 4px; } #tbl th, #tbl td { padding: 3px 4px; } #tbl td.g, #tbl th.g { padding: 3px 2px; } #tbl td.rec, #tbl td.conf { font-size: 10.5px; } #tbl tr.grp { display: none; } thead tr#hdr th { top: 0; } #tbl td.sticky, #tbl th.sticky { box-shadow: 1px 0 0 var(--rule); } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
 <div class="wrap">
-  <header><h1 id="h1">2026 College Football Ratings</h1><span class="tag"><b>VosCFB.com</b> · opponent-adjusted FBS efficiency from play-by-play · data through <span id="thru">__THRU__</span></span></header>
+  <header><h1 id="h1"><span class="site">VosCFB</span> 2026 College Football Ratings</h1><div class="years" id="years"></div></header>
 
   <nav class="tabs" id="tabs" role="tablist">
     <button type="button" role="tab" data-v="rating" aria-selected="true">Ratings</button>
@@ -95,9 +103,8 @@ tr.log td.w { color: rgb(var(--good)); font-weight: 700; } tr.log td.lz { color:
   </nav>
 
   <div class="controls">
-    <div class="ctl"><span class="lbl">Season</span><div class="seg" id="season" role="group" aria-label="Season"></div></div>
     <div class="ctl"><span class="lbl">Date window</span>
-      <div class="row"><input type="date" id="from" aria-label="From date"> <span class="lbl">to</span> <input type="date" id="to" aria-label="To date">
+      <div class="row"><select id="from" aria-label="From date"></select> <span class="lbl">through</span> <select id="to" aria-label="Through date"></select>
         <div class="seg" id="preset" role="group" aria-label="Quick windows"><button type="button" data-v="all">Season</button><button type="button" data-v="l30">Last 30 d</button><button type="button" data-v="l14">Last 14 d</button></div></div></div>
     <div class="ctl"><span class="lbl">Games</span><div class="row"><label class="chk"><input type="checkbox" id="confonly"> Conference only</label><label class="chk"><input type="checkbox" id="nopost"> No bowls/CFP</label></div></div>
     <div class="ctl" id="modewrap"><span class="lbl">Rows</span><div class="seg" id="mode" role="group" aria-label="Group by"><button type="button" data-v="team" aria-pressed="true">Teams</button><button type="button" data-v="conf" aria-pressed="false">Conferences</button></div></div>
@@ -127,6 +134,18 @@ state.open = new Set(state.open); if (!["rating", "eff", "tal", "ou", "faq"].inc
 if (!SEASONS.includes(state.season)) state.season = SEASONS[SEASONS.length - 1];
 function save() { try { localStorage.setItem("gl3", JSON.stringify({ ...state, open: [...state.open] })); } catch (e) {} }
 const $ = (id) => document.getElementById(id);
+const ABBR = { "Arizona State": "Arizona St", "Arkansas State": "Arkansas St", "Boise State": "Boise St", "Boston College": "Boston Col", "Bowling Green": "Bowling Grn",
+  "Central Michigan": "C Michigan", "Coastal Carolina": "Coastal Car", "Colorado State": "Colorado St", "East Carolina": "E Carolina", "Eastern Michigan": "E Michigan",
+  "Florida Atlantic": "FAU", "Florida International": "FIU", "Florida State": "Florida St", "Fresno State": "Fresno St", "Georgia Southern": "Ga Southern", "Georgia State": "Georgia St",
+  "Georgia Tech": "Ga Tech", "Jacksonville State": "Jax State", "James Madison": "JMU", "Kansas State": "Kansas St", "Kennesaw State": "Kennesaw St", "Louisiana Tech": "La Tech",
+  "Massachusetts": "UMass", "Michigan State": "Michigan St", "Middle Tennessee": "Middle Tenn", "Mississippi State": "Miss State", "Missouri State": "Missouri St", "New Mexico State": "N Mexico St",
+  "North Carolina": "N Carolina", "North Dakota State": "N Dakota St", "North Texas": "N Texas", "Northern Illinois": "N Illinois", "Northwestern": "Northwstrn", "Oklahoma State": "Oklahoma St",
+  "Old Dominion": "Old Dom", "Oregon State": "Oregon St", "Sacramento State": "Sac State", "Sam Houston": "Sam Houston", "San Diego State": "San Diego St", "San José State": "San José St",
+  "South Alabama": "S Alabama", "South Carolina": "S Carolina", "South Florida": "USF", "Southern Miss": "So Miss", "Texas State": "Texas St", "Virginia Tech": "Va Tech", "Wake Forest": "Wake", 
+  "Washington State": "Wash St", "West Virginia": "W Virginia", "Western Kentucky": "W Kentucky", "Western Michigan": "W Michigan" };
+const ab = (n) => ABBR[n] || n;
+const CONF = { "American Athletic": "AAC", "Big Ten": "B1G", "Big 12": "B12", "Conference USA": "CUSA", "FBS Independents": "Ind", "Mid-American": "MAC", "Mountain West": "MWC", "Pac-12": "P12", "Sun Belt": "SBC" };
+const cab = (c) => CONF[c] || c;
 const sgn = (v, d) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d);
 const pctf = (v) => (v * 100).toFixed(1) + "%";
 
@@ -199,7 +218,7 @@ const FAQ = `
 <dt>Off, Def, ST (Talent tab)</dt><dd>Composite rating of the top 22 offensive players, the top 22 defensive players, and the kicker, punter and long snapper.</dd>
 <dt>Off ±, Def ±, ST ±</dt><dd>Each unit's adjusted efficiency minus what its own talent predicts; Def ± is flipped so positive is always good.</dd>
 <dt>Small grey numbers</dt><dd>National rank in that column among all FBS teams in the window.</dd>
-<dt>G, W-L, Rk</dt><dd>Games in the window, record in those games, and rank in whichever column the sheet is sorted by.</dd>
+<dt>GP, W-L, Rk</dt><dd>Games played in the window, record in those games, and rank in whichever column the sheet is sorted by.</dd>
 </dl></section>
 <section><h2>Method</h2><dl>
 <dt>Expected points (EPA)</dt><dd>The change in how many points a drive is expected to produce from before a play to after it, from the cfbfastR model on ESPN play-by-play.</dd>
@@ -284,12 +303,14 @@ function render() {
   if (!DATA[state.season]) { $("stat").textContent = `Loading ${state.season}…`; ensureSeason(state.season).then(ok => { if (!ok) { state.season = SEASONS[SEASONS.length - 1]; } render(); }); return; }
   const [mn, mx] = bounds();
   for (const b of $("tabs").children) b.setAttribute("aria-selected", b.dataset.v === state.view);
-  $("h1").textContent = `${state.season} College Football Ratings`; document.title = `VosCFB · ${state.season} College Football Ratings`;
-  $("season").innerHTML = [...SEASONS].reverse().map(y => `<button type="button" data-v="${y}" aria-pressed="${y === state.season}">${y}</button>`).join("");
+  $("h1").innerHTML = `<span class="site">VosCFB</span> ${state.season} College Football Ratings`; document.title = `VosCFB · ${state.season} College Football Ratings`;
+  $("years").innerHTML = SEASONS.map(y => `<button type="button" data-v="${y}" aria-pressed="${y === state.season}">${y.slice(2)}</button>`).join(" · ");
   for (const b of $("mode").children) b.setAttribute("aria-pressed", b.dataset.v === state.mode);
-  $("from").min = $("to").min = mn; $("from").max = $("to").max = mx;
-  if (state.from && (state.from < mn || state.from > mx)) state.from = ""; if (state.to && (state.to < mn || state.to > mx)) state.to = "";
-  $("from").value = state.from || mn; $("to").value = state.to || mx; $("confonly").checked = state.confonly; $("nopost").checked = state.nopost;
+  const dates = [...new Set(DATA[state.season].games.map(r => r[0]))].sort();
+  if (state.from && !dates.includes(state.from)) state.from = ""; if (state.to && !dates.includes(state.to)) state.to = "";
+  const dlabel = d => new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
+  const opts = (sel) => dates.map(d => `<option value="${d}" ${d === sel ? "selected" : ""}>${dlabel(d)}</option>`).join("");
+  $("from").innerHTML = opts(state.from || mn); $("to").innerHTML = opts(state.to || mx); $("confonly").checked = state.confonly; $("nopost").checked = state.nopost;
   const confs = [...new Set(Object.values(DATA[state.season].teams))].sort();
   if (state.conf !== "All" && !confs.includes(state.conf)) state.conf = "All";
   $("conf").innerHTML = ["All", ...confs].map(c => `<option value="${c}" ${c === state.conf ? "selected" : ""}>${c === "All" ? "All FBS" : c}</option>`).join("");
@@ -304,13 +325,13 @@ function render() {
   if (faq) { save(); return; }
   if (!rows.length) { $("body").innerHTML = `<tr><td colspan="16" class="empty">No games in this window. Widen the dates or clear the filters.</td></tr>`; $("boards").innerHTML = `<div class="empty">No games in this window.</div>`; $("stat").textContent = ""; save(); return; }
   const { teams, P, nGames } = compute(rows);
-  $("stat").textContent = `${nGames} games · ${teams.length} teams · ${$("from").value} → ${$("to").value} · ${P.toFixed(0)} plays/team/game`;
+  $("stat").textContent = `${nGames} games · ${teams.length} teams · ${dlabel($("from").value)} through ${dlabel($("to").value)} · ${P.toFixed(0)} plays/team/game`;
   $("hint").textContent = ou ? "" : "Click a team for its game log. Small numbers are national ranks.";
   if (ou) { renderBoards(teams); save(); return; }
 
   const C = COLSETS[state.view], sortId = state.sort[state.view] || DEFSORT[state.view], dir = state.dir[state.view] ?? -1;
   $("grp").innerHTML = GRPS[state.view];
-  $("hdr").innerHTML = `<th class="sticky l">${isTeam ? "Team" : "Conference"}</th><th class="l">${isTeam ? "Conf" : "Size"}</th><th>G</th><th>W-L</th><th>Rk</th>` +
+  $("hdr").innerHTML = `<th class="sticky l">${isTeam ? "Team" : "Conference"}</th><th class="l">${isTeam ? "Conf" : "Size"}</th><th class="g">GP</th><th>W-L</th><th>Rk</th>` +
     C.map(c => `<th class="${c.sep ? "sep" : ""}" ${sortId === c.id ? `aria-sort="${dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button" data-sort="${c.id}">${c.label}</button></th>`).join("");
   const all = isTeam ? teams : confRows(teams);
   const rank = {}; for (const c of C) rank[c.id] = ranker(all, c);
@@ -323,8 +344,10 @@ function render() {
   const html = [];
   for (const r of list) {
     const open = isTeam && state.open.has(r.id), rk = rank[sc.id](r.v[sc.id]);
-    html.push(`<tr class="team${open ? " open" : ""}${r.id === "Texas" ? " pin" : ""}" data-id="${r.id}" tabindex="0" aria-expanded="${open}">` +
-      `<td class="sticky l team">${r.name}</td><td class="l conf">${r.sub}</td><td>${r.g}</td><td class="rec">${r.rec}</td><td class="rk">${rk ?? "—"}</td>` +
+    const nrk = all.filter(x => x.v[sc.id] != null).length, p = rk != null && nrk > 1 ? 1 - (rk - 1) / (nrk - 1) : 0.5, da = p - 0.5, al = Math.min(0.6, Math.abs(da) * 1.2);
+    const rkcls = al >= 0.05 ? (da > 0 ? "rk sh" : "rk sh lo") : "rk", rksty = al >= 0.05 ? `--a:${al.toFixed(2)}` : "";
+    html.push(`<tr class="team${open ? " open" : ""}" data-id="${r.id}" tabindex="0" aria-expanded="${open}">` +
+      `<td class="sticky l team" title="${r.name}">${isTeam ? ab(r.name) : r.name}</td><td class="l conf" title="${r.sub}">${isTeam ? cab(r.sub) : r.sub}</td><td class="g">${r.g}</td><td class="rec">${r.rec}</td><td class="${rkcls}" style="${rksty}">${rk ?? "—"}</td>` +
       C.map(c => cell(c, r.v[c.id], rank[c.id](r.v[c.id]), isTeam)).join("") + `</tr>`);
     if (open) {
       const log = [...r.log].sort((a, b) => a[0] < b[0] ? -1 : 1);
@@ -334,7 +357,7 @@ function render() {
         const tail = state.view === "eff" ? `<td class="sep"></td><td></td><td></td><td></td><td class="sep">${o}</td><td>${d}</td><td>${pctf(g[10] / g[8])}</td><td>${pctf(g[13] / g[11])}</td><td>${s}</td><td>${pc}</td>`
           : state.view === "tal" ? `<td class="sep"></td><td class="sep"></td><td></td><td></td><td></td><td class="sep">${o}</td><td>${d}</td><td>${s}</td><td></td>`
           : `<td class="sep"></td><td>${o}</td><td>${d}</td><td>${s}</td><td>${pc}</td><td class="sep"></td><td></td>`;
-        html.push(`<tr class="log${j === log.length - 1 ? " last" : ""}"><td class="sticky l">${g[0].slice(5)} · ${where} ${g[2]}${g[5] ? " (post)" : ""}</td><td class="l conf">${g[4] ? "conf" : "non-conf"}</td><td></td><td class="${cls}">${res}</td><td></td>${tail}</tr>`);
+        html.push(`<tr class="log${j === log.length - 1 ? " last" : ""}"><td class="sticky l" title="${g[2]}">${g[0].slice(5)} · ${where} ${ab(g[2])}${g[5] ? " (post)" : ""}</td><td class="l conf">${g[4] ? "conf" : "non-conf"}</td><td></td><td class="${cls}">${res}</td><td></td>${tail}</tr>`);
       });
     }
   }
@@ -351,16 +374,17 @@ function renderBoards(teams) {
   $("boards").innerHTML = units.map(u => {
     const list = pool.filter(t => t.v[u.res] != null).sort((a, b) => b.v[u.res] - a.v[u.res]);
     const n = list.length, tbl = (rows, label, start) => `<h3>${label}</h3><table><thead><tr><th class="l">#</th><th class="l">Team</th><th>Talent</th><th>Adj (${u.unit})</th><th>vs talent</th></tr></thead><tbody>` +
-      rows.map((t, i) => `<tr class="team${t.id === "Texas" ? " pin" : ""}"><td class="l rk">${start + i}</td><td class="l team">${t.name}<sub class="r">${t.sub}</sub></td><td>${t.v[u.tal].toFixed(1)}</td><td>${u.fmtA(t.v[u.adj])}</td><td class="${t.v[u.res] > 0 ? "pos" : "neg"}" style="font-weight:700">${u.fmtR(t.v[u.res])}</td></tr>`).join("") + `</tbody></table>`;
+      rows.map((t, i) => `<tr class="team"><td class="l rk">${start + i}</td><td class="l team" title="${t.name}">${ab(t.name)}<sub class="r">${cab(t.sub)}</sub></td><td>${t.v[u.tal].toFixed(1)}</td><td>${u.fmtA(t.v[u.adj])}</td><td class="${t.v[u.res] > 0 ? "pos" : "neg"}" style="font-weight:700">${u.fmtR(t.v[u.res])}</td></tr>`).join("") + `</tbody></table>`;
     return `<div class="board"><h2>${u.title} <span class="tag">· ${n} teams rated</span></h2>${n ? tbl(list.slice(0, 5), "Overachieving", 1) + tbl(list.slice(-5), "Underachieving", Math.max(1, n - 4)) : `<div class="empty">Not enough rated teams.</div>`}</div>`;
   }).join("");
 }
 
 document.addEventListener("click", (e) => {
   const tab = e.target.closest("#tabs button"); if (tab) { state.view = tab.dataset.v; render(); return; }
+  const yr = e.target.closest("#years button"); if (yr) { state.season = yr.dataset.v; state.from = ""; state.to = ""; render(); return; }
   const b = e.target.closest("button[data-v]");
   if (b) { const id = b.parentElement.id;
-    if (id === "preset") { const [mn, mx] = bounds(); state.to = ""; state.from = b.dataset.v === "all" ? "" : shift(mx, b.dataset.v === "l30" ? -30 : -14); if (state.from < mn) state.from = ""; }
+    if (id === "preset") { const [mn, mx] = bounds(); state.to = ""; state.from = b.dataset.v === "all" ? "" : shift(mx, b.dataset.v === "l30" ? -30 : -14); if (state.from < mn) state.from = ""; if (state.from) state.from = [...new Set(DATA[state.season].games.map(r => r[0]))].sort().find(d => d >= state.from) || ""; }
     else state[id] = b.dataset.v; render(); return; }
   const s = e.target.closest("button[data-sort]");
   if (s) { const id = s.dataset.sort, cur = state.sort[state.view] || DEFSORT[state.view]; state.dir[state.view] = cur === id ? -(state.dir[state.view] ?? -1) : -1; state.sort[state.view] = id; render(); return; }
