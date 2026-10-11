@@ -21,9 +21,8 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font); font-
 header { display: grid; gap: 4px; text-align: center; border-bottom: 2px solid var(--ink); padding-bottom: 8px; }
 h1 { font-size: 26px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
 h1 .site { color: var(--link); }
-.years { font-size: 14px; color: var(--muted); }
-.years button { font: inherit; color: var(--link); background: none; border: 0; padding: 0 2px; cursor: pointer; }
-.years button[aria-pressed="true"] { color: var(--ink); font-weight: 700; }
+.years { display: flex; justify-content: center; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.years select { font-size: 14px; font-weight: 700; padding: 3px 6px; }
 .tag { color: var(--muted); font-size: 12px; }
 nav.tabs { display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 1px solid var(--rule); }
 nav.tabs button { font: inherit; font-size: 13px; font-weight: 700; color: var(--muted); background: var(--tab); border: 1px solid var(--rule); border-bottom: 0; padding: 6px 12px; cursor: pointer; border-radius: 3px 3px 0 0; }
@@ -32,7 +31,7 @@ nav.tabs button[aria-selected="true"] { color: var(--ink); background: var(--pan
 .ctl { display: grid; gap: 2px; }
 .ctl label, .lbl { font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
 select, input { font: inherit; font-size: 12px; color: var(--ink); background: var(--panel); border: 1px solid var(--rule); border-radius: 2px; padding: 4px 6px; min-width: 0; }
-input[type="search"] { width: 140px; }
+input[type="search"] { width: 140px; } input[type="date"] { width: 140px; }
 .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 2px; overflow: hidden; background: var(--panel); flex-wrap: wrap; }
 .seg button { font: inherit; font-size: 12px; color: var(--ink); background: none; border: 0; padding: 4px 9px; cursor: pointer; }
@@ -93,7 +92,7 @@ tr.log td.w { color: rgb(var(--good)); font-weight: 700; } tr.log td.lz { color:
 </style>
 
 <div class="wrap">
-  <header><h1 id="h1"><span class="site">VosCFB</span> 2026 College Football Ratings</h1><div class="years" id="years"></div></header>
+  <header><h1 id="h1"><span class="site">VosCFB</span> 2026 College Football Ratings</h1><div class="years"><label for="season">Season</label><select id="season"></select></div></header>
 
   <nav class="tabs" id="tabs" role="tablist">
     <button type="button" role="tab" data-v="rating" aria-selected="true">Ratings</button>
@@ -105,7 +104,7 @@ tr.log td.w { color: rgb(var(--good)); font-weight: 700; } tr.log td.lz { color:
 
   <div class="controls">
     <div class="ctl"><span class="lbl">Date window</span>
-      <div class="row"><select id="from" aria-label="From date"></select> <span class="lbl">through</span> <select id="to" aria-label="Through date"></select>
+      <div class="row"><input type="date" id="from" aria-label="From date"> <span class="lbl">to</span> <input type="date" id="to" aria-label="To date">
         <div class="seg" id="preset" role="group" aria-label="Quick windows"><button type="button" data-v="all">Season</button><button type="button" data-v="l30">Last 30 d</button><button type="button" data-v="l14">Last 14 d</button></div></div></div>
     <div class="ctl"><span class="lbl">Games</span><div class="row"><label class="chk"><input type="checkbox" id="confonly"> Conference only</label><label class="chk"><input type="checkbox" id="nopost"> No bowls/CFP</label></div></div>
     <div class="ctl" id="modewrap"><span class="lbl">Rows</span><div class="seg" id="mode" role="group" aria-label="Group by"><button type="button" data-v="team" aria-pressed="true">Teams</button><button type="button" data-v="conf" aria-pressed="false">Conferences</button></div></div>
@@ -307,13 +306,12 @@ function render() {
   const [mn, mx] = bounds();
   for (const b of $("tabs").children) b.setAttribute("aria-selected", b.dataset.v === state.view);
   $("h1").innerHTML = `<span class="site">VosCFB</span> ${state.season} College Football Ratings`; document.title = `VosCFB · ${state.season} College Football Ratings`;
-  $("years").innerHTML = SEASONS.map(y => `<button type="button" data-v="${y}" aria-pressed="${y === state.season}">${y.slice(2)}</button>`).join(" · ");
+  $("season").innerHTML = [...SEASONS].reverse().map(y => `<option value="${y}" ${y === state.season ? "selected" : ""}>${y}</option>`).join("");
   for (const b of $("mode").children) b.setAttribute("aria-pressed", b.dataset.v === state.mode);
-  const dates = [...new Set(DATA[state.season].games.map(r => r[0]))].sort();
-  if (state.from && !dates.includes(state.from)) state.from = ""; if (state.to && !dates.includes(state.to)) state.to = "";
+  if (state.from && (state.from < mn || state.from > mx)) state.from = ""; if (state.to && (state.to < mn || state.to > mx)) state.to = "";
   const dlabel = d => new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
-  const opts = (sel) => dates.map(d => `<option value="${d}" ${d === sel ? "selected" : ""}>${dlabel(d)}</option>`).join("");
-  $("from").innerHTML = opts(state.from || mn); $("to").innerHTML = opts(state.to || mx); $("confonly").checked = state.confonly; $("nopost").checked = state.nopost;
+  $("from").min = $("to").min = mn; $("from").max = $("to").max = mx;
+  $("from").value = state.from || mn; $("to").value = state.to || mx; $("confonly").checked = state.confonly; $("nopost").checked = state.nopost;
   const confs = [...new Set(Object.values(DATA[state.season].teams))].sort();
   if (state.conf !== "All" && !confs.includes(state.conf)) state.conf = "All";
   $("conf").innerHTML = ["All", ...confs].map(c => `<option value="${c}" ${c === state.conf ? "selected" : ""}>${c === "All" ? "All FBS" : c}</option>`).join("");
@@ -385,10 +383,9 @@ function renderBoards(teams) {
 
 document.addEventListener("click", (e) => {
   const tab = e.target.closest("#tabs button"); if (tab) { state.view = tab.dataset.v; render(); return; }
-  const yr = e.target.closest("#years button"); if (yr) { state.season = yr.dataset.v; state.from = ""; state.to = ""; render(); return; }
   const b = e.target.closest("button[data-v]");
   if (b) { const id = b.parentElement.id;
-    if (id === "preset") { const [mn, mx] = bounds(); state.to = ""; state.from = b.dataset.v === "all" ? "" : shift(mx, b.dataset.v === "l30" ? -30 : -14); if (state.from < mn) state.from = ""; if (state.from) state.from = [...new Set(DATA[state.season].games.map(r => r[0]))].sort().find(d => d >= state.from) || ""; }
+    if (id === "preset") { const [mn, mx] = bounds(); state.to = ""; state.from = b.dataset.v === "all" ? "" : shift(mx, b.dataset.v === "l30" ? -30 : -14); if (state.from < mn) state.from = ""; }
     else state[id] = b.dataset.v; render(); return; }
   const s = e.target.closest("button[data-sort]");
   if (s) { const id = s.dataset.sort, cur = state.sort[state.view] || DEFSORT[state.view]; state.dir[state.view] = cur === id ? -(state.dir[state.view] ?? -1) : -1; state.sort[state.view] = id; render(); return; }
@@ -396,6 +393,7 @@ document.addEventListener("click", (e) => {
   if (tr && state.mode === "team") { const id = tr.dataset.id; state.open.has(id) ? state.open.delete(id) : state.open.add(id); render(); }
 });
 document.addEventListener("keydown", (e) => { const tr = e.target.closest && e.target.closest("tr.team[data-id]"); if (tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); tr.click(); } });
+$("season").addEventListener("change", e => { state.season = e.target.value; state.from = ""; state.to = ""; render(); });
 $("from").addEventListener("change", e => { state.from = e.target.value; if (state.to && state.from > state.to) state.to = state.from; render(); });
 $("to").addEventListener("change", e => { state.to = e.target.value; if (state.from && state.to < state.from) state.from = state.to; render(); });
 $("confonly").addEventListener("change", e => { state.confonly = e.target.checked; render(); });
