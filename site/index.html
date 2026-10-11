@@ -86,8 +86,9 @@ tr.log td.w { color: rgb(var(--good)); font-weight: 700; } tr.log td.lz { color:
 .notes { color: var(--muted); font-size: 12px; max-width: 82ch; display: grid; gap: 6px; }
 .notes h2 { font-size: 12.5px; color: var(--ink); margin: 6px 0 0; text-transform: uppercase; letter-spacing: 0.05em; }
 .notes p { margin: 0; }
+.ns { display: none; }
 @media (max-width: 600px) { :root { --fs: 11.5px; --fs-rank: 8.5px; } th, td { padding: 3px 5px; } h1 { font-size: 19px; } input[type="search"] { width: 128px; }
-  #tbl { min-width: 0; table-layout: auto; } #tbl td.team { max-width: 96px; overflow: hidden; text-overflow: ellipsis; padding-left: 4px; } #tbl th, #tbl td { padding: 3px 4px; } #tbl td.g, #tbl th.g { padding: 3px 2px; } #tbl td.rec, #tbl td.conf { font-size: 10.5px; } #tbl tr.grp { display: none; } thead tr#hdr th { top: 0; } #tbl td.sticky, #tbl th.sticky { box-shadow: 1px 0 0 var(--rule); } }
+  #tbl { min-width: 0; table-layout: auto; } #tbl td.team { width: 84px; min-width: 84px; max-width: 84px; overflow: hidden; padding-left: 4px; } #tbl .nl { display: none; } #tbl .ns { display: inline; } #tbl th, #tbl td { padding: 3px 4px; } #tbl td.g, #tbl th.g { padding: 3px 2px; } #tbl td.rec, #tbl td.conf { font-size: 10.5px; } #tbl tr.grp { display: none; } thead tr#hdr th { top: 0; } #tbl td.sticky, #tbl th.sticky { box-shadow: 1px 0 0 var(--rule); } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
@@ -144,6 +145,8 @@ const ABBR = { "Arizona State": "Arizona St", "Arkansas State": "Arkansas St", "
   "South Alabama": "S Alabama", "South Carolina": "S Carolina", "South Florida": "USF", "Southern Miss": "So Miss", "Texas State": "Texas St", "Virginia Tech": "Va Tech", "Wake Forest": "Wake", 
   "Washington State": "Wash St", "West Virginia": "W Virginia", "Western Kentucky": "W Kentucky", "Western Michigan": "W Michigan" };
 const ab = (n) => ABBR[n] || n;
+const SHORT = {"Air Force": "AFA", "App State": "App St", "Arizona State": "ASU", "Arkansas": "Ark", "Arkansas State": "Ark St", "Ball State": "Ball St", "Boise State": "Boise", "Boston College": "BC", "Bowling Green": "BGSU", "California": "Cal", "Central Michigan": "CMU", "Charlotte": "Char", "Cincinnati": "Cincy", "Colorado": "Colo", "Colorado State": "CSU", "Delaware": "Del", "East Carolina": "ECU", "Eastern Michigan": "EMU", "Florida Atlantic": "FAU", "Florida International": "FIU", "Florida State": "FSU", "Fresno State": "Fresno", "Georgia Southern": "GaSo", "Georgia State": "Ga St", "Georgia Tech": "GT", "Illinois": "Ill", "Iowa State": "Iowa St", "Jacksonville State": "Jax St", "James Madison": "JMU", "Kansas State": "K-State", "Kennesaw State": "KSU", "Kent State": "Kent St", "Kentucky": "UK", "Louisiana": "ULL", "Louisiana Tech": "La Tech", "Louisville": "Lville", "Marshall": "Marsh", "Maryland": "Md", "Massachusetts": "UMass", "Miami (OH)": "Mia OH", "Michigan": "Mich", "Michigan State": "Mich St", "Middle Tennessee": "MTSU", "Minnesota": "Minn", "Mississippi State": "Miss St", "Missouri": "Mizzou", "Missouri State": "Mo St", "NC State": "NC St", "Nebraska": "Neb", "New Mexico": "UNM", "New Mexico State": "NMSU", "North Carolina": "UNC", "North Dakota State": "NDSU", "North Texas": "UNT", "Northern Illinois": "NIU", "Northwestern": "NW", "Notre Dame": "ND", "Ohio State": "Ohio St", "Oklahoma": "OU", "Oklahoma State": "Okla St", "Old Dominion": "ODU", "Ole Miss": "Ole Mis", "Oregon State": "Ore St", "Penn State": "Penn St", "Pittsburgh": "Pitt", "Sacramento State": "Sac St", "Sam Houston": "SHSU", "San Diego State": "SDSU", "San José State": "SJSU", "South Alabama": "S Ala", "South Carolina": "S Car", "South Florida": "USF", "Southern Miss": "So Miss", "Stanford": "Stanfrd", "Syracuse": "Cuse", "Tennessee": "Tenn", "Texas A&M": "TAMU", "Texas State": "Tex St", "Texas Tech": "TTU", "UL Monroe": "ULM", "Utah State": "Utah St", "Vanderbilt": "Vandy", "Virginia": "UVA", "Virginia Tech": "VT", "Wake Forest": "Wake", "Washington": "Wash", "Washington State": "Wash St", "West Virginia": "WVU", "Western Kentucky": "WKU", "Western Michigan": "WMU", "Wisconsin": "Wisc"};
+const nm = (n) => SHORT[n] ? `<span class="nl">${ab(n)}</span><span class="ns">${SHORT[n]}</span>` : n; // short form shows on phones
 const CONF = { "American Athletic": "AAC", "Big Ten": "B1G", "Big 12": "B12", "Conference USA": "CUSA", "FBS Independents": "Ind", "Mid-American": "MAC", "Mountain West": "MWC", "Pac-12": "P12", "Sun Belt": "SBC" };
 const cab = (c) => CONF[c] || c;
 const sgn = (v, d) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d);
@@ -347,7 +350,7 @@ function render() {
     const nrk = all.filter(x => x.v[sc.id] != null).length, p = rk != null && nrk > 1 ? 1 - (rk - 1) / (nrk - 1) : 0.5, da = p - 0.5, al = Math.min(0.6, Math.abs(da) * 1.2);
     const rkcls = al >= 0.05 ? (da > 0 ? "rk sh" : "rk sh lo") : "rk", rksty = al >= 0.05 ? `--a:${al.toFixed(2)}` : "";
     html.push(`<tr class="team${open ? " open" : ""}" data-id="${r.id}" tabindex="0" aria-expanded="${open}">` +
-      `<td class="sticky l team" title="${r.name}">${isTeam ? ab(r.name) : r.name}</td><td class="l conf" title="${r.sub}">${isTeam ? cab(r.sub) : r.sub}</td><td class="g">${r.g}</td><td class="rec">${r.rec}</td><td class="${rkcls}" style="${rksty}">${rk ?? "—"}</td>` +
+      `<td class="sticky l team" title="${r.name}">${isTeam ? nm(r.name) : r.name}</td><td class="l conf" title="${r.sub}">${isTeam ? cab(r.sub) : r.sub}</td><td class="g">${r.g}</td><td class="rec">${r.rec}</td><td class="${rkcls}" style="${rksty}">${rk ?? "—"}</td>` +
       C.map(c => cell(c, r.v[c.id], rank[c.id](r.v[c.id]), isTeam)).join("") + `</tr>`);
     if (open) {
       const log = [...r.log].sort((a, b) => a[0] < b[0] ? -1 : 1);
@@ -357,7 +360,7 @@ function render() {
         const tail = state.view === "eff" ? `<td class="sep"></td><td></td><td></td><td></td><td class="sep">${o}</td><td>${d}</td><td>${pctf(g[10] / g[8])}</td><td>${pctf(g[13] / g[11])}</td><td>${s}</td><td>${pc}</td>`
           : state.view === "tal" ? `<td class="sep"></td><td class="sep"></td><td></td><td></td><td></td><td class="sep">${o}</td><td>${d}</td><td>${s}</td><td></td>`
           : `<td class="sep"></td><td>${o}</td><td>${d}</td><td>${s}</td><td>${pc}</td><td class="sep"></td><td></td>`;
-        html.push(`<tr class="log${j === log.length - 1 ? " last" : ""}"><td class="sticky l" title="${g[2]}">${g[0].slice(5)} · ${where} ${ab(g[2])}${g[5] ? " (post)" : ""}</td><td class="l conf">${g[4] ? "conf" : "non-conf"}</td><td></td><td class="${cls}">${res}</td><td></td>${tail}</tr>`);
+        html.push(`<tr class="log${j === log.length - 1 ? " last" : ""}"><td class="sticky l" title="${g[2]}">${g[0].slice(5)} · ${where} ${nm(g[2])}${g[5] ? " (post)" : ""}</td><td class="l conf">${g[4] ? "conf" : "non-conf"}</td><td></td><td class="${cls}">${res}</td><td></td>${tail}</tr>`);
       });
     }
   }
