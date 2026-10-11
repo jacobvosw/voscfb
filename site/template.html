@@ -221,7 +221,7 @@ const FAQ = `
 <dt>Off, Def, ST (Talent tab)</dt><dd>Composite rating of the top 22 offensive players, the top 22 defensive players, and the kicker, punter and long snapper.</dd>
 <dt>Off ±, Def ±, ST ±</dt><dd>Each unit's adjusted efficiency minus what its own talent predicts; Def ± is flipped so positive is always good.</dd>
 <dt>Small grey numbers</dt><dd>National rank in that column among all FBS teams in the window.</dd>
-<dt>GP, W-L, Rk</dt><dd>Games played in the window, record in those games, and rank in whichever column the sheet is sorted by.</dd>
+<dt>GP, W-L, Rk</dt><dd>Games played in the window, record in those games, and overall rank by Rating (it stays fixed when you sort by another column).</dd>
 </dl></section>
 <section><h2>Method</h2><dl>
 <dt>Expected points (EPA)</dt><dd>The change in how many points a drive is expected to produce from before a play to after it, from the cfbfastR model on ESPN play-by-play.</dd>
@@ -341,13 +341,14 @@ function render() {
   let list = all;
   if (isTeam && state.conf !== "All") list = list.filter(r => r.sub === state.conf);
   if (isTeam && state.q.trim()) { const q = state.q.trim().toLowerCase(); list = list.filter(r => [r.name, ab(r.name), SHORT[r.name] || ""].some(s => s.toLowerCase().replace(/&/g, "").includes(q.replace(/&/g, "")))); }
+  const netRank = ranker(all, { id: "net" });
   const sc = C.find(c => c.id === sortId) || C[0], nv = v => v == null ? (sc.lower ? Infinity : -Infinity) : v;
   list = [...list].sort((a, b) => (nv(a.v[sc.id]) - nv(b.v[sc.id])) * (sc.lower ? 1 : -1) * (dir < 0 ? 1 : -1) || a.name.localeCompare(b.name));
   if (!list.length) { $("body").innerHTML = `<tr><td colspan="16" class="empty">No teams match “${state.q}”.</td></tr>`; save(); return; }
   const html = [];
   for (const r of list) {
-    const open = isTeam && state.open.has(r.id), rk = rank[sc.id](r.v[sc.id]);
-    const nrk = all.filter(x => x.v[sc.id] != null).length, p = rk != null && nrk > 1 ? 1 - (rk - 1) / (nrk - 1) : 0.5, da = p - 0.5, al = Math.min(0.6, Math.abs(da) * 1.2);
+    const open = isTeam && state.open.has(r.id), rk = netRank(r.v.net);
+    const nrk = all.filter(x => x.v.net != null).length, p = rk != null && nrk > 1 ? 1 - (rk - 1) / (nrk - 1) : 0.5, da = p - 0.5, al = Math.min(0.6, Math.abs(da) * 1.2);
     const rkcls = al >= 0.05 ? (da > 0 ? "rk sh" : "rk sh lo") : "rk", rksty = al >= 0.05 ? `--a:${al.toFixed(2)}` : "";
     html.push(`<tr class="team${open ? " open" : ""}" data-id="${r.id}" tabindex="0" aria-expanded="${open}">` +
       `<td class="sticky l team" title="${r.name}">${isTeam ? nm(r.name) : r.name}</td><td class="l conf" title="${r.sub}">${isTeam ? cab(r.sub) : r.sub}</td><td class="g">${r.g}</td><td class="rec">${r.rec}</td><td class="${rkcls}" style="${rksty}">${rk ?? "—"}</td>` +
