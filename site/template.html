@@ -127,7 +127,7 @@ tr.log td.w { color: rgb(var(--good)); font-weight: 700; } tr.log td.lz { color:
 const DATA = __DATA__; // current season inline; others fetched from data/<year>.json
 const SEASONS = __SEASONS__;
 const TAL = __TAL__; // season -> team -> [offTalent, defTalent, stTalent, ratedPlayers]
-// game row: 0 date, 1 team, 2 opp, 3 loc(H/A/N), 4 confGame, 5 post, 6 pts, 7 oppPts, 8 offPlays, 9 offEPA, 10 offSucc, 11 defPlays, 12 defEPA, 13 defSucc, 14 stKO, 15 stP, 16 paceSecs, 17 pacePlays
+// game row: 0 date, 1 team, 2 opp, 3 loc(H/A/N), 4 confGame, 5 post, 6 pts, 7 oppPts, 8 offPlays, 9 offEPA, 10 offSucc, 11 defPlays, 12 defEPA, 13 defSucc, 14 stKO, 15 stP, 16 paceSecs, 17 pacePlays, 18 stFG (field goals + PATs)
 const state = { view: "rating", season: "2026", from: "", to: "", confonly: false, nopost: false, mode: "team", conf: "All", q: "", sort: {}, dir: {}, open: [] };
 try { Object.assign(state, JSON.parse(localStorage.getItem("gl3") || "{}")); } catch (e) {}
 state.open = new Set(state.open); if (!["rating", "eff", "tal", "ou", "faq"].includes(state.view)) state.view = "rating";
@@ -148,6 +148,7 @@ const SHORT = {"Air Force": "AFA", "App State": "App St", "Arizona State": "ASU"
 const nm = (n) => SHORT[n] ? `<span class="nl">${ab(n)}</span><span class="ns">${SHORT[n]}</span>` : n; // short form shows on phones
 const CONF = { "American Athletic": "AAC", "Big Ten": "B1G", "Big 12": "B12", "Conference USA": "CUSA", "FBS Independents": "Ind", "Mid-American": "MAC", "Mountain West": "MWC", "Pac-12": "P12", "Sun Belt": "SBC" };
 const cab = (c) => CONF[c] || c;
+const stv = (r) => r[14] + r[15] + (r[18] || 0); // kickoffs + punts + place kicking
 const sgn = (v, d) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d);
 const pctf = (v) => (v * 100).toFixed(1) + "%";
 
@@ -211,16 +212,17 @@ const FAQ = `
 <dt>Rating</dt><dd>Points per game better or worse than an average FBS team against an average schedule, combining adjusted offense, defense, and kicking game.</dd>
 <dt>AdjO</dt><dd>Opponent-adjusted expected points added per offensive play; higher is better.</dd>
 <dt>AdjD</dt><dd>Opponent-adjusted expected points allowed per defensive play; lower is better.</dd>
-<dt>AdjST</dt><dd>Opponent-adjusted points per game gained or lost on kickoffs and punts, covering both kicking and returning.</dd>
+<dt>AdjST</dt><dd>Opponent-adjusted points per game gained or lost on special teams: kickoffs, punts and their returns, plus field goals and extra points on both sides.</dd>
 <dt>Tempo</dt><dd>Seconds of game clock per offensive snap within drives; lower is faster, and it is a style, not a strength.</dd>
 <dt>Talent</dt><dd>Average 247Sports composite rating of the top 22 rated offensive and top 22 defensive players on the roster.</dd>
 <dt>Perf / Net ±</dt><dd>Performance vs talent: Rating minus what a straight-line fit across FBS predicts from Talent; positive means the team is beating its roster.</dd>
 <dt>SOS</dt><dd>Strength of schedule: the average Rating of the opponents a team has played in the window; higher means a tougher schedule.</dd>
 <dt>Off EPA/p, Def EPA/p</dt><dd>Raw expected points added per play on offense, and allowed on defense, with no schedule adjustment.</dd>
 <dt>Off SR, Def SR</dt><dd>Success rate: the share of plays that keep the offense on schedule (50% of needed yards on 1st down, 70% on 2nd, 100% on 3rd and 4th), for the offense and allowed by the defense.</dd>
-<dt>ST pts/g</dt><dd>Raw kickoff and punt points per game against an average FBS unit from the same field position.</dd>
+<dt>ST pts/g</dt><dd>Raw special-teams points per game: kickoffs and punts against an average unit from the same field position, plus field goals and extra points against an average kicker from the same distance.</dd>
 <dt>Off, Def, ST (Talent tab)</dt><dd>Composite rating of the top 22 offensive players, the top 22 defensive players, and the kicker, punter and long snapper.</dd>
 <dt>Off ±, Def ±, ST ±</dt><dd>Each unit's adjusted efficiency minus what its own talent predicts; Def ± is flipped so positive is always good.</dd>
+<dt>Field goals in ST</dt><dd>Each field goal counts as 3 points times (made minus the league make rate from that distance), so a made 50-yarder earns more than a made 25-yarder and a missed 25-yarder costs more than a missed 50-yarder; extra points work the same way, and the opponent's kicks count against you, which credits field-goal defense.</dd>
 <dt>Small grey numbers</dt><dd>National rank in that column among all FBS teams in the window.</dd>
 <dt>GP, W-L, Rk</dt><dd>Games played in the window, record in those games, and overall rank by Rating.</dd>
 </dl></section>
@@ -234,7 +236,7 @@ const FAQ = `
 <section><h2>About</h2><p class="about">VosCFB.com was built by a former mortgage-backed securities trader who loves college athletics. I can be reached for questions or comments at <span class="em">jacob at equitycommercialholdings dot com</span>.</p></section>`;
 const DEFSORT = { rating: "net", eff: "net", tal: "vnet" };
 const NOTES = {
-  rating: `<h2>About</h2><p>VosCFB rates every FBS team from play-by-play data: opponent-adjusted efficiency on offense, defense and the kicking game, with roster talent alongside so you can see who is beating their recruiting and who is not.</p><h2>Reading the ratings</h2><p><b>Rating</b> is points per game better or worse than an average FBS team against an average schedule: adjusted offense minus adjusted defense, scaled to a league-average number of plays, plus the adjusted kicking game. <b>AdjO</b> and <b>AdjD</b> are opponent-adjusted expected points added per play (offense higher is better; defense is what it allows, so lower is better). <b>AdjST</b> is kickoff and punt points per game. <b>Tempo</b> is seconds per offensive snap within drives. <b>Talent</b> is the roster's recruiting composite; <b>Perf</b> is the rating minus what talent alone predicts. <b>SOS</b> is the average Rating of opponents played. Small grey numbers are national ranks.</p><p>Each game is credited against the opponent's adjusted strength and a home-field term, then iterated to convergence with light shrinkage so short windows stay sane. The solve runs in your browser on the games in the selected window. FBS-vs-FBS games only; not garbage-time filtered. Expected points from the cfbfastR model on ESPN play-by-play.</p>`,
+  rating: `<h2>About</h2><p>VosCFB rates every FBS team from play-by-play data: opponent-adjusted efficiency on offense, defense and the kicking game, with roster talent alongside so you can see who is beating their recruiting and who is not.</p><h2>Reading the ratings</h2><p><b>Rating</b> is points per game better or worse than an average FBS team against an average schedule: adjusted offense minus adjusted defense, scaled to a league-average number of plays, plus the adjusted kicking game. <b>AdjO</b> and <b>AdjD</b> are opponent-adjusted expected points added per play (offense higher is better; defense is what it allows, so lower is better). <b>AdjST</b> is special-teams points per game (kickoffs, punts, field goals and extra points, for and against). <b>Tempo</b> is seconds per offensive snap within drives. <b>Talent</b> is the roster's recruiting composite; <b>Perf</b> is the rating minus what talent alone predicts. <b>SOS</b> is the average Rating of opponents played. Small grey numbers are national ranks.</p><p>Each game is credited against the opponent's adjusted strength and a home-field term, then iterated to convergence with light shrinkage so short windows stay sane. The solve runs in your browser on the games in the selected window. FBS-vs-FBS games only; not garbage-time filtered. Expected points from the cfbfastR model on ESPN play-by-play.</p>`,
   eff: `<h2>Raw columns</h2><p>Unadjusted EPA per play, success rate (plays that stay on schedule), kicking-game points per game, and tempo. Tempo is measured drive-start to next-drive-start so it reflects how fast the offense operates with the ball, not possession length.</p>`,
   tal: `<h2>Talent columns</h2><p>Composites built from 247Sports roster ratings by position: average rating of the top 22 rated offensive players, top 22 defensive players, and the kicker, punter and long snapper. Team is the mean of offense and defense. The ± columns are the adjusted metric minus a straight-line fit across all FBS teams on that side's talent, so positive means outperforming the roster; Def ± is flipped so positive is good. Specialists are often unrated, so ST talent is blank for some teams. Nine 2025 rosters were unavailable from 247 and show blank.</p>`,
   faq: "",
@@ -251,10 +253,10 @@ function compute(rows) {
   for (const r of rows) {
     const t = T[r[1]] ||= { g: 0, w: 0, l: 0, oP: 0, oE: 0, oS: 0, dP: 0, dE: 0, dS: 0, st: 0, ps: 0, pn: 0, log: [] };
     t.g++; if (r[6] != null && r[7] != null) { r[6] > r[7] ? t.w++ : r[6] < r[7] ? t.l++ : 0; }
-    t.oP += r[8]; t.oE += r[9]; t.oS += r[10]; t.dP += r[11]; t.dE += r[12]; t.dS += r[13]; t.st += r[14] + r[15]; t.ps += r[16]; t.pn += r[17]; t.log.push(r);
+    t.oP += r[8]; t.oE += r[9]; t.oS += r[10]; t.dP += r[11]; t.dE += r[12]; t.dS += r[13]; t.st += stv(r); t.ps += r[16]; t.pn += r[17]; t.log.push(r);
   }
   let totP = 0, totE = 0, n = 0, hO = 0, hN = 0, aO = 0, aN = 0, hS = 0, aS = 0;
-  for (const r of rows) { totP += r[8]; totE += r[9]; n++; const o = r[9] / r[8], s = r[14] + r[15]; if (r[3] === "H") { hO += o; hS += s; hN++; } else if (r[3] === "A") { aO += o; aS += s; aN++; } }
+  for (const r of rows) { totP += r[8]; totE += r[9]; n++; const o = r[9] / r[8], s = stv(r); if (r[3] === "H") { hO += o; hS += s; hN++; } else if (r[3] === "A") { aO += o; aS += s; aN++; } }
   const mu = totE / totP, P = totP / n, hfa = hN && aN ? (hO / hN - aO / aN) / 2 : 0, hfaS = hN && aN ? (hS / hN - aS / aN) / 2 : 0;
   const K = 1.5, names = Object.keys(T), aO_ = {}, aD_ = {}, aS_ = {};
   for (const k of names) { aO_[k] = 0; aD_[k] = 0; aS_[k] = 0; }
@@ -263,7 +265,7 @@ function compute(rows) {
     for (const k of names) {
       let so = 0, sd = 0, ss = 0;
       for (const r of T[k].log) { const loc = r[3] === "H" ? 1 : r[3] === "A" ? -1 : 0, opp = r[2];
-        so += (r[9] / r[8] - mu - loc * hfa) - (aD_[opp] || 0); sd += (r[12] / r[11] - mu + loc * hfa) - (aO_[opp] || 0); ss += (r[14] + r[15] - loc * hfaS) + (aS_[opp] || 0); }
+        so += (r[9] / r[8] - mu - loc * hfa) - (aD_[opp] || 0); sd += (r[12] / r[11] - mu + loc * hfa) - (aO_[opp] || 0); ss += (stv(r) - loc * hfaS) + (aS_[opp] || 0); }
       const d = T[k].g + K; nO[k] = so / d; nD[k] = sd / d; nS[k] = ss / d;
     }
     Object.assign(aO_, nO); Object.assign(aD_, nD); Object.assign(aS_, nS);
@@ -360,7 +362,7 @@ function render() {
       const log = [...r.log].sort((a, b) => a[0] < b[0] ? -1 : 1);
       log.forEach((g, j) => {
         const res = g[6] == null ? "" : `${g[6] > g[7] ? "W" : g[6] < g[7] ? "L" : "T"} ${g[6]}–${g[7]}`, cls = g[6] > g[7] ? "w" : g[6] < g[7] ? "lz" : "", where = g[3] === "H" ? "vs" : g[3] === "A" ? "@" : "N";
-        const o = sgn(g[9] / g[8], 3), d = sgn(g[12] / g[11], 3), s = sgn(g[14] + g[15], 1), pc = g[17] ? (g[16] / g[17]).toFixed(1) : "—";
+        const o = sgn(g[9] / g[8], 3), d = sgn(g[12] / g[11], 3), s = sgn(stv(g), 1), pc = g[17] ? (g[16] / g[17]).toFixed(1) : "—";
         const tail = state.view === "eff" ? `<td class="sep"></td><td></td><td></td><td></td><td class="sep">${o}</td><td>${d}</td><td>${pctf(g[10] / g[8])}</td><td>${pctf(g[13] / g[11])}</td><td>${s}</td><td>${pc}</td>`
           : state.view === "tal" ? `<td class="sep"></td><td class="sep"></td><td></td><td></td><td></td><td class="sep">${o}</td><td>${d}</td><td>${s}</td><td></td>`
           : `<td class="sep"></td><td>${o}</td><td>${d}</td><td>${s}</td><td>${pc}</td><td class="sep"></td><td></td>`;

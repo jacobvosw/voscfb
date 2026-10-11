@@ -16,6 +16,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 from rds import read_rds
 import kicks
+import kicking
 
 SRC = "https://github.com/sportsdataverse/cfbfastR-data/raw/main/data/rds/pbp_players_pos_{y}.rds"
 CACHE = os.path.join(ROOT, "data", "cache")
@@ -67,6 +68,9 @@ def season(y, cache):
                               'play_text', 'down', 'distance', 'yards_to_goal', 'ep_before', 'row_order']].copy())
     print(y, 'kicks', info, flush=True)
     tg = kicks.team_games(kv).pivot_table(index=['game_id', 'team'], columns='unit', values='net').fillna(0)
+    pk, pkinfo = kicking.team_game_values(d[['game_id', 'home', 'away', 'pos_team', 'pos_team_score', 'def_pos_team_score',
+                                            'play_type', 'play_text', 'period', 'row_order']])
+    print(y, 'place kicking', pkinfo, flush=True)
 
     # FBS-vs-FBS games only for the ratings
     f = d[(d.home_team_division == 'fbs') & (d.away_team_division == 'fbs')].sort_values('row_order')
@@ -96,7 +100,7 @@ def season(y, cache):
                          int(tp) if pd.notna(tp) else None, int(op) if pd.notna(op) else None,
                          int(o.n), round(float(o.epa), 2), int(o.succ), int(de.n), round(float(de.epa), 2), int(de.succ),
                          round(float(st['KO']), 2) if st is not None else 0.0, round(float(st['P']), 2) if st is not None else 0.0,
-                         pc[0], pc[1]])
+                         pc[0], pc[1], round(float(pk.get((gid, team), 0.0)), 2)])
             last = max(last, date)
     teams = sorted({r[1] for r in rows})
     print(y, len(rows), 'team-games,', len(teams), 'teams, through', last, flush=True)
