@@ -34,3 +34,20 @@ open site/index.html
    (185.199.108.153, .109.153, .110.153, .111.153) and `CNAME www → <user>.github.io`.
    Then Settings → Pages → Custom domain `voscfb.com`, Enforce HTTPS.
 4. Actions tab → Refresh ratings → Run workflow, to confirm the first deploy.
+
+## Model and accuracy
+
+Settings live in `pipeline/model.py` (mirrored in `site/template.html`): 3-point home field,
+garbage-time plays removed and single-play EPA capped at ±4.5, last season's ratings as a
+3-game prior (90% carryover) on full-season views, special teams weighted 1.5×, and the
+Rating is 60% adjusted efficiency (×1.1) + 40% opponent-adjusted scoring margin (capped at 28).
+
+Chosen by walk-forward backtest against closing spreads: each week rated only from earlier
+games, predictions compared with the line and the final score.
+
+| | Vegas avg miss | Model avg miss | Gap |
+|---|---|---|---|
+| 2025 (659 games, mid-Sep on) | 11.8 | 12.3 | +0.5 |
+| 2026 through Oct 10 (225 games) | 11.3 | 12.4 | +1.1 |
+
+Acceptance standard: model average miss within 2–3 points of the line's.

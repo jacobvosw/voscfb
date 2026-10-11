@@ -17,6 +17,7 @@ sys.path.insert(0, HERE)
 from rds import read_rds
 import kicks
 import kicking
+import model
 
 SRC = "https://github.com/sportsdataverse/cfbfastR-data/raw/main/data/rds/pbp_players_pos_{y}.rds"
 CACHE = os.path.join(ROOT, "data", "cache")
@@ -82,7 +83,13 @@ def season(y, cache):
     f = f.assign(hs=np.where(hp, f.pos_team_score, f.def_pos_team_score), as_=np.where(hp, f.def_pos_team_score, f.pos_team_score))
     games = games.join(f.groupby('game_id')[['hs', 'as_']].max())
     m = ((f.rush == 1) | (f['pass'] == 1)) & f.EPA.notna() & f.pos_team.notna()
-    off = f[m].groupby(['game_id', 'pos_team']).agg(n=('EPA', 'size'), epa=('EPA', 'sum'), succ=('success', 'sum'))
+    # drop garbage time (by quarter and lead) and cap single-play EPA
+    lead = (f.pos_team_score - f.def_pos_team_score).abs(); q = f.period.fillna(1)
+    gt = np.zeros(len(f), dtype=bool)
+    for qq, th in model.GT.items():
+        gt |= ((q >= qq) if qq == 4 else (q == qq)).values & (lead > th).values
+    f = f.assign(epac=f.EPA.clip(-model.EPA_CAP, model.EPA_CAP))
+    off = f[m & ~gt].groupby(['game_id', 'pos_team']).agg(n=('epac', 'size'), epa=('epac', 'sum'), succ=('success', 'sum'))
     pace = pace_table(f)
     conf = {}
     for r in games.itertuples(): conf[r.home] = str(r.hconf); conf[r.away] = str(r.aconf)
@@ -117,6 +124,12 @@ def main():
         json.dump({'thru': last, **data}, open(os.path.join(ddir, f'{y}.json'), 'w'), separators=(',', ':'))
     # manifest of every season on disk + overall data-through date
     seasons = sorted(f[:-5] for f in os.listdir(ddir) if re.fullmatch(r'\d{4}\.json', f))
+    # preseason prior for each season = last season's final ratings, decayed
+    for y in seasons:
+        prev = str(int(y) - 1)
+        fp = os.path.join(ddir, f'{y}.json'); d = json.load(open(fp))
+        d['prior'] = model.prior_from(json.load(open(os.path.join(ddir, f'{prev}.json')))['games']) if prev in seasons else {}
+        json.dump(d, open(fp, 'w'), separators=(',', ':'))
     thru = max(json.load(open(os.path.join(ddir, f'{y}.json')))['thru'] for y in seasons)
     current = seasons[-1]
     cur = json.load(open(os.path.join(ddir, f'{current}.json')))
