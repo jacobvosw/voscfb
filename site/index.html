@@ -228,7 +228,7 @@ const FAQ = `
 </dl></section>
 <section><h2>Method</h2><dl>
 <dt>Expected points (EPA)</dt><dd>The change in how many points a drive is expected to produce from before a play to after it, from the cfbfastR model on ESPN play-by-play.</dd>
-<dt>Opponent adjustment</dt><dd>Each game is credited against the opponent's adjusted strength and a 3-point home-field term, then iterated to convergence; for a full-season view, last season's ratings plus this year's roster talent count as about three games of evidence, so early-season numbers don't swing on one result.</dd>
+<dt>Opponent adjustment</dt><dd>Each game is credited against the opponent's adjusted strength and a 3-point home-field term, then iterated to convergence; whenever the date window starts at the beginning of the season, last season's ratings plus this year's roster talent count as about three games of evidence, so early-season numbers don't swing on one result.</dd>
 <dt>Accuracy</dt><dd>Tested week by week against closing spreads in 2025 and 2026, the projected margins miss the final score by about 0.5 to 1 point more per game than the betting line does.</dd>
 <dt>What's excluded</dt><dd>Games against FCS opponents, and garbage-time plays (a lead of more than 38 points in the 2nd quarter, 28 in the 3rd, or 22 in the 4th); single plays are also capped so one fluke doesn't dominate.</dd>
 <dt>Seasons</dt><dd>2019 through the current season; the source feed for 2019–2022 covers the regular season and conference championships only, and talent composites exist for 2025 onward, so the Talent columns and Over/Under boards are blank for earlier years.</dd>
@@ -262,7 +262,8 @@ function compute(rows) {
   for (const r of rows) { totP += r[8]; totE += r[9]; n++; }
   const mu = totE / totP, P = totP / n, hfa = HFA / (2 * P);
   // last season's ratings act as a prior only for full-season windows
-  const prior = (!state.from && !state.to && DATA[state.season].prior) || null, pw = prior ? PRIOR_W : 0;
+  // prior applies whenever the window starts at the season's first game (any end date), so week-over-week comparisons stay like-for-like
+  const prior = ((!state.from || state.from <= bounds()[0]) && DATA[state.season].prior) || null, pw = prior ? PRIOR_W : 0;
   const pr = (k, i) => (prior && prior[k] ? prior[k][i] : 0);
   const names = Object.keys(T), aO_ = {}, aD_ = {}, aS_ = {}, M_ = {};
   for (const k of names) { aO_[k] = 0; aD_[k] = 0; aS_[k] = 0; M_[k] = 0; }
