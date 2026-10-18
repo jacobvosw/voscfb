@@ -2,9 +2,15 @@ name: Refresh ratings
 
 on:
   schedule:
-    # Sunday 11:10 UTC (7:10 am ET) after Saturday games land in cfbfastR-data,
-    # and Tuesday 11:10 UTC for corrections and weeknight games.
-    - cron: "10 11 * * 0,2"
+    # GitHub cron is best-effort and often late or skipped at busy times, so run
+    # several times on Sunday (Saturday games) and Tuesday (corrections, weeknight
+    # games), on an off minute. Each run only commits when the data changed.
+    - cron: "17 11 * * 0"
+    - cron: "37 13 * * 0"
+    - cron: "17 16 * * 0"
+    - cron: "37 19 * * 0"
+    - cron: "17 11 * * 2"
+    - cron: "37 15 * * 2"
   workflow_dispatch:
     inputs:
       seasons:
